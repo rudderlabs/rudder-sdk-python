@@ -19,7 +19,7 @@ framework to process your event data on the fly.
 
 install_requires = [
     "requests>=2.7,<3.0",
-    "six>=1.5",
+    "six>=1.4",
     "monotonic>=1.5",
     "backoff==1.6.0",
     "python-dateutil>2.1"
@@ -44,6 +44,7 @@ setup(
     packages=['rudder_analytics', 'rudder_analytics.test'],
     license='MIT License',
     install_requires=install_requires,
+    keywords=['rudder', 'rudderstack', 'analytics'],
     extras_require={
         'test': tests_require
     },

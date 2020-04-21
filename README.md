@@ -8,11 +8,11 @@ Rudder is a platform for collecting, storing and routing customer event data to 
 
 Released under [MIT License 2.0](https://opensource.org/licenses/MIT)
 
-## Getting Started with Android SDK
+## Getting Started with Python SDK
 
-Install `rudder-analytics-python` using `pip`
+Install `rudder-sdk-python` using `pip`
 ```
-pip install rudder-analytics-python
+pip install rudder-sdk-python
 ```
 
 ## Initialize the ```Client```
