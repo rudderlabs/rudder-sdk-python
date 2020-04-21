@@ -7,24 +7,24 @@ from requests.auth import HTTPBasicAuth
 from requests import sessions
 from io import BytesIO
 
-from analytics.version import VERSION
-from analytics.utils import remove_trailing_slash
+from rudder_analytics.version import VERSION
+from rudder_analytics.utils import remove_trailing_slash
 
 _session = sessions.Session()
 
 
 def post(write_key, host=None, gzip=False, timeout=15, **kwargs):
     """Post the `kwargs` to the API"""
-    log = logging.getLogger('segment')
+    log = logging.getLogger('rudder')
     body = kwargs
     body["sentAt"] = datetime.utcnow().replace(tzinfo=tzutc()).isoformat()
-    url = remove_trailing_slash(host or 'https://api.segment.io') + '/v1/batch'
+    url = remove_trailing_slash(host or 'https://hosted.rudderlabs.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
     log.debug('making request: %s', data)
     headers = {
         'Content-Type': 'application/json',
-        'User-Agent': 'analytics-python/' + VERSION
+        'User-Agent': 'rudderstack-python/' + VERSION
     }
     if gzip:
         headers['Content-Encoding'] = 'gzip'
@@ -58,7 +58,7 @@ class APIError(Exception):
         self.code = code
 
     def __str__(self):
-        msg = "[Segment] {0}: {1} ({2})"
+        msg = "[Rudder] {0}: {1} ({2})"
         return msg.format(self.code, self.message, self.status)
 
 

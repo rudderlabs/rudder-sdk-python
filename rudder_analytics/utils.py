@@ -6,7 +6,7 @@ import numbers
 
 import six
 
-log = logging.getLogger('segment')
+log = logging.getLogger('rudder')
 
 
 def is_naive(dt):

@@ -1,12 +1,11 @@
-
-from analytics.version import VERSION
-from analytics.client import Client
+from rudder_analytics.version import VERSION
+from rudder_analytics.client import Client
 
 __version__ = VERSION
 
 """Settings."""
 write_key = None
-host = None
+data_plane_url = None
 on_error = None
 debug = False
 send = True
@@ -65,7 +64,7 @@ def _proxy(method, *args, **kwargs):
     """Create an analytics client if one doesn't exist and send to it."""
     global default_client
     if not default_client:
-        default_client = Client(write_key, host=host, debug=debug,
+        default_client = Client(write_key, host=data_plane_url, debug=debug,
                                 on_error=on_error, send=send,
                                 sync_mode=sync_mode)
 

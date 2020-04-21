@@ -72,7 +72,7 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(cleaned['fn'], None)
 
     def test_remove_slash(self):
-        self.assertEqual('http://segment.io',
-                         utils.remove_trailing_slash('http://segment.io/'))
-        self.assertEqual('http://segment.io',
-                         utils.remove_trailing_slash('http://segment.io'))
+        self.assertEqual('http://hosted.rudderlabs.com',
+                         utils.remove_trailing_slash('http://hosted.rudderlabs.com/'))
+        self.assertEqual('http://hosted.rudderlabs.com',
+                         utils.remove_trailing_slash('http://hosted.rudderlabs.com'))

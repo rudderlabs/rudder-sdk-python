@@ -4,7 +4,7 @@ import monotonic
 import backoff
 import json
 
-from analytics.request import post, APIError, DatetimeSerializer
+from rudder_analytics.request import post, APIError, DatetimeSerializer
 
 try:
     from queue import Empty
@@ -20,7 +20,7 @@ BATCH_SIZE_LIMIT = 475000
 
 class Consumer(Thread):
     """Consumes the messages from the client's queue."""
-    log = logging.getLogger('segment')
+    log = logging.getLogger('rudder')
 
     def __init__(self, queue, write_key, flush_at=100, host=None,
                  on_error=None, flush_interval=0.5, gzip=False, retries=10,

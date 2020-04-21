@@ -7,10 +7,10 @@ import atexit
 from dateutil.tz import tzutc
 from six import string_types
 
-from analytics.utils import guess_timezone, clean
-from analytics.consumer import Consumer
-from analytics.request import post
-from analytics.version import VERSION
+from rudder_analytics.utils import guess_timezone, clean
+from rudder_analytics.consumer import Consumer
+from rudder_analytics.request import post
+from rudder_analytics.version import VERSION
 
 try:
     import queue
@@ -20,12 +20,12 @@ except ImportError:
 
 ID_TYPES = (numbers.Number, string_types)
 
-
 class Client(object):
-    """Create a new Segment client."""
-    log = logging.getLogger('segment')
+    """Create a new Rudder client."""
+    log = logging.getLogger('rudder')
+    anonymoys_id = str(uuid4())
 
-    def __init__(self, write_key=None, host=None, debug=False,
+    def __init__(self, write_key=None, host='https://hosted.rudderlabs.com', debug=False,
                  max_queue_size=10000, send=True, on_error=None, flush_at=100,
                  flush_interval=0.5, gzip=False, max_retries=3,
                  sync_mode=False, timeout=15, thread=1):
@@ -75,6 +75,9 @@ class Client(object):
         integrations = integrations or {}
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('traits', traits, dict)
+
+        if traits != None:
+            context['traits'] = traits.copy()
 
         msg = {
             'integrations': integrations,
@@ -228,12 +231,24 @@ class Client(object):
         require('timestamp', timestamp, datetime)
         require('context', msg['context'], dict)
 
+        # add anonymousId to the message if not passed
+        msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
+
+        # copy the userId to context.traits
+        if msg['userId'] != None:
+            if 'traits' in msg['context'].keys():
+                msg['context']['traits']['userId'] = msg['userId']
+            else :
+                msg['context']['traits'] = {'userId': msg['userId']}
+
+        msg['context']['traits']['anonymousId'] = msg['anonymousId']
+
         # add common
         timestamp = guess_timezone(timestamp)
         msg['timestamp'] = timestamp.isoformat()
         msg['messageId'] = stringify_id(message_id)
         msg['context']['library'] = {
-            'name': 'analytics-python',
+            'name': 'rudder-analytics-python',
             'version': VERSION
         }
 
@@ -259,7 +274,7 @@ class Client(object):
             self.log.debug('enqueued %s.', msg['type'])
             return True, msg
         except queue.Full:
-            self.log.warning('analytics-python queue is full')
+            self.log.warning('rudder-analytics-python queue is full')
             return False, msg
 
     def flush(self):

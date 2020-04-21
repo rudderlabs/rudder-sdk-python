@@ -6,3 +6,5 @@ dist
 MANIFEST
 build
 .eggs
+[metadata]
+**/.DS_Store

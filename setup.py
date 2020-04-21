@@ -1,4 +1,3 @@
-
 import os
 import sys
 
@@ -7,18 +6,15 @@ try:
 except ImportError:
     from distutils.core import setup
 
-# Don't import analytics-python module here, since deps may not be installed
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'analytics'))
+# Don't import rudder_analytics module here, since deps may not be installed
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'rudder_analytics'))
 from version import VERSION
 
 long_description = '''
-Segment is the simplest way to integrate analytics into your application.
-One API allows you to turn on any other analytics service. No more learning
-new APIs, repeated code, and wasted development time.
-
-This is the official python client that wraps the Segment REST API (https://segment.com).
-
-Documentation and more details at https://github.com/segmentio/analytics-python
+RudderStack is a platform for collecting, storing and routing customer event data to dozens 
+of tools. RudderStack is open-source, can run in your cloud environment 
+(AWS, GCP, Azure or even your data-centre) and provides a powerful transformation 
+framework to process your event data on the fly.
 '''
 
 install_requires = [
@@ -37,21 +33,21 @@ tests_require = [
 ]
 
 setup(
-    name='analytics-python',
+    name='rudder-sdk-python',
     version=VERSION,
-    url='https://github.com/segmentio/analytics-python',
-    author='Segment',
-    author_email='friends@segment.com',
-    maintainer='Segment',
-    maintainer_email='friends@segment.com',
-    test_suite='analytics.test.all',
-    packages=['analytics', 'analytics.test'],
+    url='https://github.com/rudderlabs/rudder-sdk-python',
+    author='RudderStack',
+    author_email='arnab@rudderlabs.com',
+    maintainer='RudderStack',
+    maintainer_email='arnab@rudderlabs.com',
+    test_suite='rudder_analytics.test.all',
+    packages=['rudder_analytics', 'rudder_analytics.test'],
     license='MIT License',
     install_requires=install_requires,
     extras_require={
         'test': tests_require
     },
-    description='The hassle-free way to integrate analytics into any python application.',
+    description='RudderStack is an open-source Segment alternative written in Go, built for the enterprise.',
     long_description=long_description,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
