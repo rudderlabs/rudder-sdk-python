@@ -1,4 +1,4 @@
-﻿# What is Rudder?
+﻿# What is RudderStack?
 
 **Short answer:** 
 Rudder is an open-source Segment alternative written in Go, built for the enterprise. .
@@ -29,8 +29,6 @@ rudder_analytics.track('developer_user_id', 'Simple Track Event', {
   'key1': 'val1'
 })
 ```
-
-For more detailed documentation check [the documentation page](https://segment.com/docs/connections/sources/catalog/libraries/server/python/).
 
 ## Contact Us
 If you come across any issues while configuring or using RudderStack, please feel free to [contact us](https://rudderstack.com/contact/) or start a conversation on our [Discord](https://discordapp.com/invite/xNEdEGw) channel. We will be happy to help you.
