@@ -1,30 +1,29 @@
-# What is RudderStack?
+# RudderStack Python SDK
 
-[RudderStack](https://rudderstack.com/) is a **customer data pipeline** tool for collecting, routing and processing data from your websites, apps, cloud tools, and data warehouse.
+RudderStack’s Python SDK lets you track events from your Python application. Once enabled, the event requests hit the RudderStack servers. RudderStack then transforms and routes these events to your specified destination platforms.
 
-More information on RudderStack can be found [here](https://github.com/rudderlabs/rudder-server).
-
-## RudderStack Python SDK
-
-RudderStack’s Python SDK allows you to track your customer event data from your Python code. Once enabled, the event requests hit the RudderStack servers. RudderStack then routes the events to the specified destination platforms as configured by you.
+More details on the Python SDK can be found in our [**documentation**](https://docs.rudderstack.com/stream-sources/rudderstack-sdk-integration-guides/rudderstack-python-sdk)
 
 ## Getting Started with Python SDK
 
-Install `rudder-sdk-python` using `pip`
+Install `rudder-sdk-python` using `pip`:
+
 ```
 pip install rudder-sdk-python
 ```
 
-## Initialize the ```Client```
+## Initializing the RudderStack Client
 
 ```
 import rudder_analytics
 
-rudder_analytics.write_key = <WRITE_KEY>
+rudder_analytics.write_key = <SOURCE_WRITE_KEY>
 rudder_analytics.data_plane_url = <DATA_PLANE_URL>
 ```
 
-## Send Events
+## Sending Events
+
+Once the RudderStack client is initialized, you can use it to send your customer events. A sample `track` call is shown below:
 
 ```
 rudder_analytics.track('developer_user_id', 'Simple Track Event', {
@@ -32,6 +31,14 @@ rudder_analytics.track('developer_user_id', 'Simple Track Event', {
 })
 ```
 
+For more information on the supported calls, refer to the [**documentation**](https://docs.rudderstack.com/stream-sources/rudderstack-sdk-integration-guides/rudderstack-python-sdk#sending-events-from-rudderstack).
+
+## About RudderStack
+
+[**RudderStack**](https://rudderstack.com/) is a customer data platform for developers.  Our tooling makes it easy to deploy pipelines that collect customer data from every app, website and SaaS platform, then activate it in your warehouse and business tools.
+
+More information on RudderStack can be found [**here**](https://github.com/rudderlabs/rudder-server).
+
 ## Contact Us
 
-If you come across any issues while configuring or using this SDK, feel free to start a conversation on our [Slack](https://resources.rudderstack.com/join-rudderstack-slack) channel. We will be happy to help you.
+If you come across any issues while configuring or using this SDK, you can start a conversation on our [**Slack**](https://resources.rudderstack.com/join-rudderstack-slack) channel.
