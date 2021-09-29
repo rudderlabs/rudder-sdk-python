@@ -23,8 +23,7 @@ class Consumer(Thread):
     log = logging.getLogger('rudder')
 
     def __init__(self, queue, write_key, flush_at=100, host=None,
-                 on_error=None, flush_interval=0.5, gzip=False, retries=10,
-                 timeout=15):
+                 on_error=None, flush_interval=0.5, retries=10, timeout=15):
         """Create a consumer thread."""
         Thread.__init__(self)
         # Make consumer a daemon thread so that it doesn't block program exit
@@ -35,7 +34,6 @@ class Consumer(Thread):
         self.host = host
         self.on_error = on_error
         self.queue = queue
-        self.gzip = gzip
         # It's important to set running in the constructor: if we are asked to
         # pause immediately after construction, we might set running to True in
         # run() *after* we set it to False in pause... and keep running
@@ -128,7 +126,6 @@ class Consumer(Thread):
             max_tries=self.retries + 1,
             giveup=fatal_exception)
         def send_request():
-            post(self.write_key, self.host, gzip=self.gzip,
-                 timeout=self.timeout, batch=batch)
+            post(self.write_key, self.host, timeout=self.timeout, batch=batch)
 
         send_request()

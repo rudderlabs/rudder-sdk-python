@@ -2,10 +2,8 @@ from datetime import date, datetime
 from dateutil.tz import tzutc
 import logging
 import json
-from gzip import GzipFile
 from requests.auth import HTTPBasicAuth
 from requests import sessions
-from io import BytesIO
 
 from rudder_analytics.version import VERSION
 from rudder_analytics.utils import remove_trailing_slash
@@ -13,7 +11,7 @@ from rudder_analytics.utils import remove_trailing_slash
 _session = sessions.Session()
 
 
-def post(write_key, host=None, gzip=False, timeout=15, **kwargs):
+def post(write_key, host=None, timeout=15, **kwargs):
     """Post the `kwargs` to the API"""
     log = logging.getLogger('rudder')
     body = kwargs
@@ -26,14 +24,6 @@ def post(write_key, host=None, gzip=False, timeout=15, **kwargs):
         'Content-Type': 'application/json',
         'User-Agent': 'rudderstack-python/' + VERSION
     }
-    if gzip:
-        headers['Content-Encoding'] = 'gzip'
-        buf = BytesIO()
-        with GzipFile(fileobj=buf, mode='w') as gz:
-            # 'data' was produced by json.dumps(),
-            # whose default encoding is utf-8.
-            gz.write(data.encode('utf-8'))
-        data = buf.getvalue()
 
     res = _session.post(url, data=data, auth=auth,
                         headers=headers, timeout=timeout)
