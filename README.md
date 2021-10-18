@@ -8,13 +8,13 @@ More details on the Python SDK can be found in our [**documentation**](https://d
 
 Install `rudder-sdk-python` using `pip`:
 
-```
+```bash
 pip install rudder-sdk-python
 ```
 
 ## Initializing the RudderStack Client
 
-```
+```python
 import rudder_analytics
 
 rudder_analytics.write_key = <SOURCE_WRITE_KEY>
@@ -25,7 +25,7 @@ rudder_analytics.data_plane_url = <DATA_PLANE_URL>
 
 Once the RudderStack client is initialized, you can use it to send your customer events. A sample `track` call is shown below:
 
-```
+```python
 rudder_analytics.track('developer_user_id', 'Simple Track Event', {
   'key1': 'val1'
 })
@@ -35,10 +35,10 @@ For more information on the supported calls, refer to the [**documentation**](ht
 
 ## About RudderStack
 
-[**RudderStack**](https://rudderstack.com/) is a customer data platform for developers.  Our tooling makes it easy to deploy pipelines that collect customer data from every app, website and SaaS platform, then activate it in your warehouse and business tools.
+[**RudderStack**](https://rudderstack.com/) is a customer data platform for developers. Our tooling makes it easy to deploy pipelines that collect customer data from every app, website and SaaS platform, then activate it in your warehouse and business tools.
 
 More information on RudderStack can be found [**here**](https://github.com/rudderlabs/rudder-server).
 
 ## Contact Us
 
-If you come across any issues while configuring or using this SDK, you can start a conversation on our [**Slack**](https://resources.rudderstack.com/join-rudderstack-slack) channel.
+For more information on any of the sections covered in this readme, you can [**contact us**](mailto:%20docs@rudderstack.com) or start a conversation on our [**Slack**](https://resources.rudderstack.com/join-rudderstack-slack) channel.
