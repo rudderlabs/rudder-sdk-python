@@ -310,13 +310,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(msg['traits'], {'birthdate': date(1981, 2, 2)})
 
-    def test_gzip(self):
-        client = Client('testsecret', on_error=self.fail, gzip=True)
-        for _ in range(10):
-            client.identify('userId', {'trait': 'value'})
-        client.flush()
-        self.assertFalse(self.failed)
-
     def test_user_defined_flush_at(self):
         client = Client('testsecret', on_error=self.fail,
                         flush_at=10, flush_interval=3)
