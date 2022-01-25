@@ -235,11 +235,12 @@ class Client(object):
         # msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
 
         # copy the userId to context.traits
-        if msg['userId'] != None:
-            if 'traits' in msg['context'].keys():
-                msg['context']['traits']['userId'] = msg['userId']
-            else :
-                msg['context']['traits'] = {'userId': msg['userId']}
+        if 'userId' in msg.keys() :
+            if msg['userId'] != None:
+                if 'traits' in msg['context'].keys():
+                    msg['context']['traits']['userId'] = msg['userId']
+                else :
+                    msg['context']['traits'] = {'userId': msg['userId']}
         if 'anonymousId' in msg.keys() :
             if msg['anonymousId'] != None:        
                 if 'traits' in msg['context'].keys():
