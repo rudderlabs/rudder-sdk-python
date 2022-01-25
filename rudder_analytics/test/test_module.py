@@ -1,6 +1,6 @@
 import unittest
 
-import analytics
+import rudder_analytics as analytics 
 
 
 class TestModule(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestModule(unittest.TestCase):
 
     def setUp(self):
         self.failed = False
-        analytics.write_key = 'testsecret'
+        analytics.write_key = 'test_secret'
         analytics.on_error = self.failed
 
     def test_no_write_key(self):

@@ -1,5 +1,5 @@
 import unittest
-import mock
+from unittest import mock
 import time
 import json
 
@@ -8,8 +8,8 @@ try:
 except ImportError:
     from Queue import Queue
 
-from analytics.consumer import Consumer, MAX_MSG_SIZE
-from analytics.request import APIError
+from rudder_analytics.consumer import Consumer, MAX_MSG_SIZE
+from rudder_analytics.request import APIError
 
 
 class TestConsumer(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestConsumer(unittest.TestCase):
 
     def test_upload(self):
         q = Queue()
-        consumer = Consumer(q, 'testsecret')
+        consumer = Consumer(q, 'test_secret')
         track = {
             'type': 'track',
             'event': 'python event',
@@ -57,9 +57,9 @@ class TestConsumer(unittest.TestCase):
         # The consumer should upload _n_ times.
         q = Queue()
         flush_interval = 0.3
-        consumer = Consumer(q, 'testsecret', flush_at=10,
+        consumer = Consumer(q, 'test_secret', flush_at=10,
                             flush_interval=flush_interval)
-        with mock.patch('analytics.consumer.post') as mock_post:
+        with mock.patch('rudder_analytics.consumer.post') as mock_post:
             consumer.start()
             for i in range(0, 3):
                 track = {
@@ -77,9 +77,9 @@ class TestConsumer(unittest.TestCase):
         q = Queue()
         flush_interval = 0.5
         flush_at = 10
-        consumer = Consumer(q, 'testsecret', flush_at=flush_at,
+        consumer = Consumer(q, 'test_secret', flush_at=flush_at,
                             flush_interval=flush_interval)
-        with mock.patch('analytics.consumer.post') as mock_post:
+        with mock.patch('rudder_analytics.consumer.post') as mock_post:
             consumer.start()
             for i in range(0, flush_at * 2):
                 track = {
@@ -92,7 +92,7 @@ class TestConsumer(unittest.TestCase):
             self.assertEqual(mock_post.call_count, 2)
 
     def test_request(self):
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         track = {
             'type': 'track',
             'event': 'python event',
@@ -109,7 +109,7 @@ class TestConsumer(unittest.TestCase):
                 raise expected_exception
         mock_post.call_count = 0
 
-        with mock.patch('analytics.consumer.post',
+        with mock.patch('rudder_analytics.consumer.post',
                         mock.Mock(side_effect=mock_post)):
             track = {
                 'type': 'track',
@@ -135,21 +135,21 @@ class TestConsumer(unittest.TestCase):
 
     def test_request_retry(self):
         # we should retry on general errors
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         self._test_request_retry(consumer, Exception('generic exception'), 2)
 
         # we should retry on server errors
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 2)
 
         # we should retry on HTTP 429 errors
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         self._test_request_retry(consumer, APIError(
             429, 'code', 'Too Many Requests'), 2)
 
         # we should NOT retry on other client errors
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         api_error = APIError(400, 'code', 'Client Errors')
         try:
             self._test_request_retry(consumer, api_error, 1)
@@ -159,19 +159,19 @@ class TestConsumer(unittest.TestCase):
             self.fail('request() should not retry on client errors')
 
         # test for number of exceptions raise > retries value
-        consumer = Consumer(None, 'testsecret', retries=3)
+        consumer = Consumer(None, 'test_secret', retries=3)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 3)
 
     def test_pause(self):
-        consumer = Consumer(None, 'testsecret')
+        consumer = Consumer(None, 'test_secret')
         consumer.pause()
         self.assertFalse(consumer.running)
 
     def test_max_batch_size(self):
         q = Queue()
         consumer = Consumer(
-            q, 'testsecret', flush_at=100000, flush_interval=3)
+            q, 'test_secret', flush_at=100000, flush_interval=3)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -189,7 +189,7 @@ class TestConsumer(unittest.TestCase):
                             % len(data.encode()))
             return res
 
-        with mock.patch('analytics.request._session.post',
+        with mock.patch('rudder_analytics.request._session.post',
                         side_effect=mock_post_fn) as mock_post:
             consumer.start()
             for _ in range(0, n_msgs + 2):

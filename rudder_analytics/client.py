@@ -231,16 +231,22 @@ class Client(object):
         require('context', msg['context'], dict)
 
         # add anonymousId to the message if not passed
-        msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
+        # anonymous id need not be forced.
+        # msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
 
         # copy the userId to context.traits
-        if msg['userId'] != None:
-            if 'traits' in msg['context'].keys():
-                msg['context']['traits']['userId'] = msg['userId']
-            else :
-                msg['context']['traits'] = {'userId': msg['userId']}
-
-        msg['context']['traits']['anonymousId'] = msg['anonymousId']
+        if 'userId' in msg.keys() :
+            if msg['userId'] != None:
+                if 'traits' in msg['context'].keys():
+                    msg['context']['traits']['userId'] = msg['userId']
+                else :
+                    msg['context']['traits'] = {'userId': msg['userId']}
+        if 'anonymousId' in msg.keys() :
+            if msg['anonymousId'] != None:        
+                if 'traits' in msg['context'].keys():
+                    msg['context']['traits']['anonymousId'] = msg['anonymousId']
+                else :
+                    msg['context']['traits'] = {'anonymousId': msg['anonymousId']}    
 
         # add common
         timestamp = guess_timezone(timestamp)
