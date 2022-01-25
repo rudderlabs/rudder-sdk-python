@@ -5,7 +5,7 @@ import unittest
 from dateutil.tz import tzutc
 import six
 
-from analytics import utils
+from rudder_analytics import utils
 
 
 class TestUtils(unittest.TestCase):
