@@ -16,7 +16,7 @@ class TestClient(unittest.TestCase):
 
     def setUp(self):
         self.failed = False
-        self.client = Client('test_secret', on_error=self.fail)
+        self.client = Client(host= 'https://hosted.rudderlabs.com', write_key='test_secret', on_error=self.fail)
 
     def test_requires_write_key(self):
         self.assertRaises(AssertionError, Client)
