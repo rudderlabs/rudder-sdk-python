@@ -75,8 +75,7 @@ class Client(object):
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('traits', traits, dict)
 
-        if traits != None:
-            context['traits'] = traits.copy()
+       
 
         msg = {
             'integrations': integrations,
@@ -234,20 +233,7 @@ class Client(object):
         # anonymous id need not be forced.
         # msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
 
-        # copy the userId to context.traits
-        if 'userId' in msg.keys() :
-            if msg['userId'] != None:
-                if 'traits' in msg['context'].keys():
-                    msg['context']['traits']['userId'] = msg['userId']
-                else :
-                    msg['context']['traits'] = {'userId': msg['userId']}
-        if 'anonymousId' in msg.keys() :
-            if msg['anonymousId'] != None:        
-                if 'traits' in msg['context'].keys():
-                    msg['context']['traits']['anonymousId'] = msg['anonymousId']
-                else :
-                    msg['context']['traits'] = {'anonymousId': msg['anonymousId']}    
-
+        
         # add common
         timestamp = guess_timezone(timestamp)
         msg['timestamp'] = timestamp.isoformat()
