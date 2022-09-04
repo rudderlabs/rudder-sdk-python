@@ -11,9 +11,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'rudder_analytics'))
 from version import VERSION
 
 long_description = '''
-RudderStack is a platform for collecting, storing and routing customer event data to dozens 
-of tools. RudderStack is open-source, can run in your cloud environment 
-(AWS, GCP, Azure or even your data-centre) and provides a powerful transformation 
+RudderStack is a platform for collecting, storing and routing customer event data to dozens
+of tools. RudderStack is open-source, can run in your cloud environment
+(AWS, GCP, Azure or even your data-centre) and provides a powerful transformation
 framework to process your event data on the fly.
 '''
 
@@ -21,7 +21,7 @@ install_requires = [
     "requests>=2.7,<3.0",
     "six>=1.4",
     "monotonic>=1.5",
-    "backoff~=1.10",
+    "backoff>=2.1",
     "python-dateutil>2.1"
 ]
 
