@@ -8,8 +8,9 @@ try:
 except ImportError:
     from Queue import Queue
 
-from rudder_analytics.consumer import Consumer, MAX_MSG_SIZE
-from rudder_analytics.request import APIError
+from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
+from rudderstack.analytics.request import APIError
+import rudderstack.analytics.get_env
 
 
 class TestConsumer(unittest.TestCase):
@@ -23,12 +24,12 @@ class TestConsumer(unittest.TestCase):
 
     def test_next_limit(self):
         q = Queue()
-        flush_at = 50
-        consumer = Consumer(q, '', flush_at)
+        upload_size = 50
+        consumer = Consumer(q, '', upload_size)
         for i in range(10000):
             q.put(i)
         next = consumer.next()
-        self.assertEqual(next, list(range(flush_at)))
+        self.assertEqual(next, list(range(upload_size)))
 
     def test_dropping_oversize_msg(self):
         q = Queue()
@@ -41,7 +42,8 @@ class TestConsumer(unittest.TestCase):
 
     def test_upload(self):
         q = Queue()
-        consumer = Consumer(q, 'test_secret')
+        consumer = Consumer(q, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -51,15 +53,17 @@ class TestConsumer(unittest.TestCase):
         success = consumer.upload()
         self.assertTrue(success)
 
-    def test_flush_interval(self):
+    def test_upload_interval(self):
         # Put _n_ items in the queue, pausing a little bit more than
-        # _flush_interval_ after each one.
+        # _upload_interval_ after each one.
         # The consumer should upload _n_ times.
         q = Queue()
-        flush_interval = 0.3
-        consumer = Consumer(q, 'test_secret', flush_at=10,
-                            flush_interval=flush_interval)
-        with mock.patch('rudder_analytics.consumer.post') as mock_post:
+
+        upload_interval = 0.3
+        consumer = Consumer(q, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=10,
+                            upload_interval=upload_interval)
+        with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
             for i in range(0, 3):
                 track = {
@@ -68,31 +72,35 @@ class TestConsumer(unittest.TestCase):
                     'userId': 'userId'
                 }
                 q.put(track)
-                time.sleep(flush_interval * 1.1)
+                time.sleep(upload_interval * 1.1)
             self.assertEqual(mock_post.call_count, 3)
 
     def test_multiple_uploads_per_interval(self):
-        # Put _flush_at*2_ items in the queue at once, then pause for
-        # _flush_interval_. The consumer should upload 2 times.
+        # Put _upload_size*2_ items in the queue at once, then pause for
+        # _upload_interval_. The consumer should upload 2 times.
         q = Queue()
-        flush_interval = 0.5
-        flush_at = 10
-        consumer = Consumer(q, 'test_secret', flush_at=flush_at,
-                            flush_interval=flush_interval)
-        with mock.patch('rudder_analytics.consumer.post') as mock_post:
+        upload_interval = 0.5
+        upload_size = 10
+        consumer = Consumer(q,host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=upload_size,
+                            upload_interval=upload_interval)
+        with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
-            for i in range(0, flush_at * 2):
+            for i in range(0, upload_size * 2):
                 track = {
                     'type': 'track',
                     'event': 'python event %d' % i,
                     'userId': 'userId'
                 }
                 q.put(track)
-            time.sleep(flush_interval * 1.1)
+            time.sleep(upload_interval * 1.1)
             self.assertEqual(mock_post.call_count, 2)
 
-    def test_request(self):
-        consumer = Consumer(None, 'test_secret')
+
+    @classmethod
+    def test_request(cls):
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -109,7 +117,7 @@ class TestConsumer(unittest.TestCase):
                 raise expected_exception
         mock_post.call_count = 0
 
-        with mock.patch('rudder_analytics.consumer.post',
+        with mock.patch('rudderstack.analytics.consumer.post',
                         mock.Mock(side_effect=mock_post)):
             track = {
                 'type': 'track',
@@ -117,7 +125,7 @@ class TestConsumer(unittest.TestCase):
                 'userId': 'userId'
             }
             # request() should succeed if the number of exceptions raised is
-            # less than the retries paramater.
+            # less than the retries parameter.
             if exception_count <= consumer.retries:
                 consumer.request([track])
             else:
@@ -135,21 +143,25 @@ class TestConsumer(unittest.TestCase):
 
     def test_request_retry(self):
         # we should retry on general errors
-        consumer = Consumer(None, 'test_secret')
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
         self._test_request_retry(consumer, Exception('generic exception'), 2)
 
         # we should retry on server errors
-        consumer = Consumer(None, 'test_secret')
+        consumer = Consumer(None,host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 2)
 
         # we should retry on HTTP 429 errors
-        consumer = Consumer(None, 'test_secret')
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
         self._test_request_retry(consumer, APIError(
             429, 'code', 'Too Many Requests'), 2)
 
         # we should NOT retry on other client errors
-        consumer = Consumer(None, 'test_secret')
+        consumer = Consumer(None,host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
         api_error = APIError(400, 'code', 'Client Errors')
         try:
             self._test_request_retry(consumer, api_error, 1)
@@ -159,19 +171,22 @@ class TestConsumer(unittest.TestCase):
             self.fail('request() should not retry on client errors')
 
         # test for number of exceptions raise > retries value
-        consumer = Consumer(None, 'test_secret', retries=3)
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET, retries=3)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 3)
 
     def test_pause(self):
-        consumer = Consumer(None, 'test_secret')
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
         consumer.pause()
         self.assertFalse(consumer.running)
 
     def test_max_batch_size(self):
         q = Queue()
         consumer = Consumer(
-            q, 'test_secret', flush_at=100000, flush_interval=3)
+            q,host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=100000, upload_interval=3)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -189,10 +204,21 @@ class TestConsumer(unittest.TestCase):
                             % len(data.encode()))
             return res
 
-        with mock.patch('rudder_analytics.request._session.post',
+        with mock.patch('rudderstack.analytics.request._session.post',
                         side_effect=mock_post_fn) as mock_post:
             consumer.start()
             for _ in range(0, n_msgs + 2):
                 q.put(track)
             q.join()
-            self.assertEquals(mock_post.call_count, 2)
+            self.assertEqual(mock_post.call_count, 2)
+
+    @classmethod
+    def test_proxies(cls):
+        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
+        write_key=rudderstack.analytics.get_env.TEST_SECRET, proxies='203.243.63.16:80')
+        track = {
+            'type': 'track',
+            'event': 'python event',
+            'userId': 'userId'
+        }
+        consumer.request([track])

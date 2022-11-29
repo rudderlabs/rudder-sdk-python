@@ -3,9 +3,8 @@ from decimal import Decimal
 import unittest
 
 from dateutil.tz import tzutc
-import six
 
-from rudder_analytics import utils
+from rudderstack.analytics import utils
 
 
 class TestUtils(unittest.TestCase):
@@ -25,7 +24,7 @@ class TestUtils(unittest.TestCase):
     def test_clean(self):
         simple = {
             'decimal': Decimal('0.142857'),
-            'unicode': six.u('woo'),
+            'unicode': 'woo',
             'date': datetime.now(),
             'long': 200000000,
             'integer': 1,
@@ -56,18 +55,14 @@ class TestUtils(unittest.TestCase):
         }
         self.assertEqual(dict_with_dates, utils.clean(dict_with_dates))
 
-    def test_bytes(self):
-        if six.PY3:
-            item = bytes(10)
-        else:
-            item = bytearray(10)
-
+    @classmethod
+    def test_bytes(cls):
+        item = bytes(10)
         utils.clean(item)
 
     def test_clean_fn(self):
         cleaned = utils.clean({'fn': lambda x: x, 'number': 4})
         self.assertEqual(cleaned['number'], 4)
-        # TODO: fixme, different behavior on python 2 and 3
         if 'fn' in cleaned:
             self.assertEqual(cleaned['fn'], None)
 

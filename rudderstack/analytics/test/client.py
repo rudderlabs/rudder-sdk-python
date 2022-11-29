@@ -1,11 +1,10 @@
 from datetime import date, datetime
 import unittest
-import six
-from unittest import mock
 import time
+from unittest import mock
 
-from rudder_analytics.version import VERSION
-from rudder_analytics.client import Client
+from rudderstack.analytics.version import VERSION
+from rudderstack.analytics.client import Client
 
 
 class TestClient(unittest.TestCase):
@@ -16,7 +15,7 @@ class TestClient(unittest.TestCase):
 
     def setUp(self):
         self.failed = False
-        self.client = Client(host= 'https://hosted.rudderlabs.com', write_key='test_secret', on_error=self.fail)
+        self.client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail)
 
     def test_requires_write_key(self):
         self.assertRaises(AssertionError, Client)
@@ -80,7 +79,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['event'], 'python test event')
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         })
         self.assertEqual(msg['messageId'], 'messageId')
@@ -115,7 +114,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['traits'], {'trait': 'value'})
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         })
         self.assertTrue(isinstance(msg['timestamp'], str))
@@ -149,7 +148,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['traits'], {'trait': 'value'})
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         })
         self.assertTrue(isinstance(msg['timestamp'], str))
@@ -191,7 +190,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['properties'], {'property': 'value'})
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         })
         self.assertEqual(msg['category'], 'category')
@@ -225,7 +224,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['properties'], {'property': 'value'})
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         })
         self.assertTrue(isinstance(msg['timestamp'], str))
@@ -238,8 +237,8 @@ class TestClient(unittest.TestCase):
     def test_flush(self):
         client = self.client
         # set up the consumer with more requests than a single batch will allow
-        for i in range(1000):
-            success, msg = client.identify('userId', {'trait': 'value'})
+        for _ in range(1000):
+            _, _ = client.identify('userId', {'trait': 'value'})
         # We can't reliably assert that the queue is non-empty here; that's
         # a race condition. We do our best to load it up though.
         client.flush()
@@ -249,8 +248,8 @@ class TestClient(unittest.TestCase):
     def test_shutdown(self):
         client = self.client
         # set up the consumer with more requests than a single batch will allow
-        for i in range(1000):
-            success, msg = client.identify('userId', {'trait': 'value'})
+        for _ in range(1000):
+            _, _ = client.identify('userId', {'trait': 'value'})
         client.shutdown()
         # we expect two things after shutdown:
         # 1. client queue is empty
@@ -260,33 +259,33 @@ class TestClient(unittest.TestCase):
             self.assertFalse(consumer.is_alive())
 
     def test_synchronous(self):
-        client = Client('test_secret', sync_mode=True)
+        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', sync_mode=True)
 
-        success, message = client.identify('userId')
+        success, _ = client.identify('userId')
         self.assertFalse(client.consumers)
         self.assertTrue(client.queue.empty())
         self.assertTrue(success)
 
     def test_overflow(self):
-        client = Client('test_secret', max_queue_size=1)
+        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', max_queue_size=1)
         # Ensure consumer thread is no longer uploading
         client.join()
 
-        for i in range(10):
+        for _ in range(10):
             client.identify('userId')
 
-        success, msg = client.identify('userId')
+        success, _ = client.identify('userId')
         # Make sure we are informed that the queue is at capacity
         self.assertFalse(success)
 
-    def test_success_on_invalid_write_key(self):
+    def test_failure_on_invalid_write_key(self):
         client = Client('bad_key', on_error=self.fail)
         client.track('userId', 'event')
         client.flush()
         self.assertTrue(self.failed)
 
     def test_unicode(self):
-        Client(six.u('unicode_key'))
+        Client('unicode_key')
 
     def test_numeric_user_id(self):
         self.client.track(1234, 'python event')
@@ -310,28 +309,40 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(msg['traits'], {'birthdate': date(1981, 2, 2)})
 
-    def test_user_defined_flush_at(self):
-        client = Client('test_secret', on_error=self.fail,
-                        flush_at=10, flush_interval=3)
+    # def test_gzip(self):
+    #     client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail, gzip=True)
+    #     for _ in range(10):
+    #         client.identify('userId', {'trait': 'value'})
+    #     client.flush()
+    #     self.assertFalse(self.failed)
+
+    def test_user_defined_upload_size(self):
+        client = Client(write_key = '2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail,
+                        upload_size=10, upload_interval=3)
 
         def mock_post_fn(*args, **kwargs):
-            self.assertEquals(len(kwargs['batch']), 10)
+            self.assertEqual(len(kwargs['batch']), 10)
 
         # the post function should be called 2 times, with a batch size of 10
         # each time.
-        with mock.patch('rudder_analytics.consumer.post', side_effect=mock_post_fn) \
+        with mock.patch('rudderstack.analytics.consumer.post', side_effect=mock_post_fn) \
                 as mock_post:
             for _ in range(20):
                 client.identify('userId', {'trait': 'value'})
             time.sleep(1)
-            self.assertEquals(mock_post.call_count, 2)
+            self.assertEqual(mock_post.call_count, 2)
 
     def test_user_defined_timeout(self):
-        client = Client('test_secret', timeout=10)
+        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', timeout=10)
         for consumer in client.consumers:
-            self.assertEquals(consumer.timeout, 10)
+            self.assertEqual(consumer.timeout, 10)
 
     def test_default_timeout_15(self):
-        client = Client('test_secret')
+        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh')
         for consumer in client.consumers:
-            self.assertEquals(consumer.timeout, 15)
+            self.assertEqual(consumer.timeout, 15)
+
+    def test_proxies(self):
+        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', proxies='203.243.63.16:80')
+        success, msg = client.identify('userId', {'trait': 'value'})
+        self.assertTrue(success)

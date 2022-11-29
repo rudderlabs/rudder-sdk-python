@@ -1,5 +1,5 @@
 import logging
-import rudder_analytics
+import rudderstack.analytics as rudder_analytics
 
 logging.basicConfig()
 logging.getLogger('rudder').setLevel('DEBUG')

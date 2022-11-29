@@ -1,12 +1,12 @@
-from dateutil.tz import tzlocal, tzutc
-from datetime import date, datetime
-from decimal import Decimal
+from enum import Enum
 import logging
 import numbers
 
-import six
+from decimal import Decimal
+from datetime import date, datetime
+from dateutil.tz import tzlocal, tzutc
 
-log = logging.getLogger('rudder')
+log = logging.getLogger('rudderstack')
 
 
 def is_naive(dt):
@@ -31,9 +31,8 @@ def guess_timezone(dt):
             # this was created using datetime.datetime.now()
             # so we are in the local timezone
             return dt.replace(tzinfo=tzlocal())
-        else:
-            # at this point, the best we can do is guess UTC
-            return dt.replace(tzinfo=tzutc())
+        # at this point, the best we can do is guess UTC
+        return dt.replace(tzinfo=tzutc())
 
     return dt
 
@@ -47,13 +46,15 @@ def remove_trailing_slash(host):
 def clean(item):
     if isinstance(item, Decimal):
         return float(item)
-    elif isinstance(item, (six.string_types, bool, numbers.Number, datetime,
+    elif isinstance(item, (str, bool, numbers.Number, datetime,
                            date, type(None))):
         return item
     elif isinstance(item, (set, list, tuple)):
         return _clean_list(item)
     elif isinstance(item, dict):
         return _clean_dict(item)
+    elif isinstance(item, Enum):
+        return clean(item.value)
     else:
         return _coerce_unicode(item)
 
@@ -64,7 +65,7 @@ def _clean_list(list_):
 
 def _clean_dict(dict_):
     data = {}
-    for k, v in six.iteritems(dict_):
+    for k, v in dict_.items():
         try:
             data[k] = clean(v)
         except TypeError:

@@ -1,15 +1,20 @@
-from rudder_analytics.version import VERSION
-from rudder_analytics.client import Client
+
+from rudderstack.analytics.version import VERSION
+from rudderstack.analytics.client import Client
 
 __version__ = VERSION
 
 """Settings."""
-write_key = None
-data_plane_url = None
-on_error = None
-debug = False
-send = True
-sync_mode = False
+write_key = Client.DefaultConfig.write_key
+host = Client.DefaultConfig.host
+on_error = Client.DefaultConfig.on_error
+debug = Client.DefaultConfig.debug
+send = Client.DefaultConfig.send
+sync_mode = Client.DefaultConfig.sync_mode
+max_queue_size = Client.DefaultConfig.max_queue_size
+gzip = Client.DefaultConfig.gzip
+timeout = Client.DefaultConfig.timeout
+max_retries = Client.DefaultConfig.max_retries
 
 default_client = None
 
@@ -64,9 +69,11 @@ def _proxy(method, *args, **kwargs):
     """Create an analytics client if one doesn't exist and send to it."""
     global default_client
     if not default_client:
-        default_client = Client(write_key, host=data_plane_url, debug=debug,
-                                on_error=on_error, send=send,
-                                sync_mode=sync_mode)
+        default_client = Client(write_key, host=host, debug=debug,
+                                max_queue_size=max_queue_size,
+                                send=send, on_error=on_error,
+                                gzip=gzip, max_retries=max_retries,
+                                sync_mode=sync_mode, timeout=timeout)
 
     fn = getattr(default_client, method)
     fn(*args, **kwargs)

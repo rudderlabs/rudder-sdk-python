@@ -1,16 +1,16 @@
 import unittest
 
-import rudder_analytics as analytics 
+import rudderstack.analytics as analytics
 
 
 class TestModule(unittest.TestCase):
 
-    def failed(self):
-        self.failed = True
+    # def failed(self):
+    #     self.failed = True
 
     def setUp(self):
         self.failed = False
-        analytics.write_key = 'test_secret'
+        analytics.write_key = '2BqDIDKDAnwqv18h0yZwG8GifNh'
         analytics.on_error = self.failed
 
     def test_no_write_key(self):

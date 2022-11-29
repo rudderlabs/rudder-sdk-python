@@ -6,6 +6,9 @@ dist
 MANIFEST
 build
 .eggs
-[metadata]
+*.bat
+.vscode/
+.idea/
+.python-version
 **/.DS_Store
-.vscode/launch.json
+.env
