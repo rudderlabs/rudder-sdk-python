@@ -1,7 +1,7 @@
 import logging
 import argparse
 import json
-import rudderstack_analytics as analytics
+import rudderstack.analytics as analytics
 
 __name__ = 'simulator.py'
 __version__ = '0.0.1'

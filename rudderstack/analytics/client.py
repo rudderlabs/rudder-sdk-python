@@ -6,6 +6,7 @@ import atexit
 import json
 
 from dateutil.tz import tzutc
+from rudderstack.analytics.get_env import HOST_URL
 
 from rudderstack.analytics.utils import guess_timezone, clean
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
@@ -15,12 +16,12 @@ from rudderstack.analytics.version import VERSION
 import queue
 
 ID_TYPES = (numbers.Number, str)
-
+CHANNEL = 'server'
 
 class Client(object):
     class DefaultConfig(object):
         write_key = None
-        host = "https://rudderstacyta.dataplane.dev.rudderlabs.com"
+        host = HOST_URL
         on_error = None
         debug = False
         send = True
@@ -36,7 +37,6 @@ class Client(object):
 
     """Create a new rudderstack client."""
     log = logging.getLogger('rudderstack')
-
     def __init__(self,
                  write_key=DefaultConfig.write_key,
                  host=DefaultConfig.host,
@@ -238,7 +238,7 @@ class Client(object):
         }
 
         return self._enqueue(msg)
-
+    
     def _enqueue(self, msg):
         """Push a new `msg` onto the queue, return `(success, msg)`"""
         timestamp = msg['timestamp']
@@ -264,7 +264,7 @@ class Client(object):
 
         msg['userId'] = stringify_id(msg.get('userId', None))
         msg['anonymousId'] = stringify_id(msg.get('anonymousId', None))
-
+        msg['channel'] = CHANNEL
         msg = clean(msg)
         self.log.debug('queueing: %s', msg)
 

@@ -3,9 +3,9 @@ import unittest
 import time
 from unittest import mock
 
-from rudderstack.analytics.version import VERSION
-from rudderstack.analytics.client import Client
-
+from version import VERSION
+from client import Client
+from get_env import TEST_SECRET
 
 class TestClient(unittest.TestCase):
 
@@ -15,7 +15,7 @@ class TestClient(unittest.TestCase):
 
     def setUp(self):
         self.failed = False
-        self.client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail)
+        self.client = Client(TEST_SECRET, on_error=self.fail)
 
     def test_requires_write_key(self):
         self.assertRaises(AssertionError, Client)
@@ -259,7 +259,7 @@ class TestClient(unittest.TestCase):
             self.assertFalse(consumer.is_alive())
 
     def test_synchronous(self):
-        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', sync_mode=True)
+        client = Client(TEST_SECRET, sync_mode=True)
 
         success, _ = client.identify('userId')
         self.assertFalse(client.consumers)
@@ -267,7 +267,7 @@ class TestClient(unittest.TestCase):
         self.assertTrue(success)
 
     def test_overflow(self):
-        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', max_queue_size=1)
+        client = Client(TEST_SECRET, max_queue_size=1)
         # Ensure consumer thread is no longer uploading
         client.join()
 
@@ -310,16 +310,16 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['traits'], {'birthdate': date(1981, 2, 2)})
 
     # def test_gzip(self):
-    #     client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail, gzip=True)
+    #     client = Client(TEST_SECRET, on_error=self.fail, gzip=True)
     #     for _ in range(10):
     #         client.identify('userId', {'trait': 'value'})
     #     client.flush()
     #     self.assertFalse(self.failed)
 
     def test_user_defined_upload_size(self):
-        client = Client(write_key = '2BqDIDKDAnwqv18h0yZwG8GifNh', on_error=self.fail,
+        client = Client(write_key = TEST_SECRET, on_error=self.fail,
                         upload_size=10, upload_interval=3)
-
+        print("write_key", TEST_SECRET)
         def mock_post_fn(*args, **kwargs):
             self.assertEqual(len(kwargs['batch']), 10)
 
@@ -333,16 +333,16 @@ class TestClient(unittest.TestCase):
             self.assertEqual(mock_post.call_count, 2)
 
     def test_user_defined_timeout(self):
-        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', timeout=10)
+        client = Client(TEST_SECRET, timeout=10)
         for consumer in client.consumers:
             self.assertEqual(consumer.timeout, 10)
 
     def test_default_timeout_15(self):
-        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh')
+        client = Client(TEST_SECRET)
         for consumer in client.consumers:
             self.assertEqual(consumer.timeout, 15)
 
     def test_proxies(self):
-        client = Client('2BqDIDKDAnwqv18h0yZwG8GifNh', proxies='203.243.63.16:80')
+        client = Client(TEST_SECRET, proxies='203.243.63.16:80')
         success, msg = client.identify('userId', {'trait': 'value'})
         self.assertTrue(success)

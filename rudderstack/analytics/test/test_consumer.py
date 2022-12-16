@@ -10,7 +10,8 @@ except ImportError:
 
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
 from rudderstack.analytics.request import APIError
-import rudderstack.analytics.get_env
+from rudderstack.analytics.get_env import TEST_SECRET
+from rudderstack.analytics.get_env import HOST_URL
 
 
 class TestConsumer(unittest.TestCase):
@@ -42,8 +43,8 @@ class TestConsumer(unittest.TestCase):
 
     def test_upload(self):
         q = Queue()
-        consumer = Consumer(q, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET)
+        consumer = Consumer(q, host=HOST_URL, 
+        write_key=TEST_SECRET)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -60,8 +61,8 @@ class TestConsumer(unittest.TestCase):
         q = Queue()
 
         upload_interval = 0.3
-        consumer = Consumer(q, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=10,
+        consumer = Consumer(q, host=HOST_URL, 
+        write_key=TEST_SECRET, upload_size=10,
                             upload_interval=upload_interval)
         with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
@@ -81,8 +82,8 @@ class TestConsumer(unittest.TestCase):
         q = Queue()
         upload_interval = 0.5
         upload_size = 10
-        consumer = Consumer(q,host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=upload_size,
+        consumer = Consumer(q,host=HOST_URL, 
+        write_key=TEST_SECRET, upload_size=upload_size,
                             upload_interval=upload_interval)
         with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
@@ -99,8 +100,8 @@ class TestConsumer(unittest.TestCase):
 
     @classmethod
     def test_request(cls):
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET)
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -143,25 +144,25 @@ class TestConsumer(unittest.TestCase):
 
     def test_request_retry(self):
         # we should retry on general errors
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET,)
         self._test_request_retry(consumer, Exception('generic exception'), 2)
 
         # we should retry on server errors
-        consumer = Consumer(None,host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
+        consumer = Consumer(None,host=HOST_URL, 
+        write_key=TEST_SECRET,)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 2)
 
         # we should retry on HTTP 429 errors
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET,)
         self._test_request_retry(consumer, APIError(
             429, 'code', 'Too Many Requests'), 2)
 
         # we should NOT retry on other client errors
-        consumer = Consumer(None,host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
+        consumer = Consumer(None,host=HOST_URL, 
+        write_key=TEST_SECRET,)
         api_error = APIError(400, 'code', 'Client Errors')
         try:
             self._test_request_retry(consumer, api_error, 1)
@@ -171,22 +172,22 @@ class TestConsumer(unittest.TestCase):
             self.fail('request() should not retry on client errors')
 
         # test for number of exceptions raise > retries value
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET, retries=3)
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET, retries=3)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 3)
 
     def test_pause(self):
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET,)
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET,)
         consumer.pause()
         self.assertFalse(consumer.running)
 
     def test_max_batch_size(self):
         q = Queue()
         consumer = Consumer(
-            q,host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET, upload_size=100000, upload_interval=3)
+            q,host=HOST_URL, 
+        write_key=TEST_SECRET, upload_size=100000, upload_interval=3)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -214,8 +215,8 @@ class TestConsumer(unittest.TestCase):
 
     @classmethod
     def test_proxies(cls):
-        consumer = Consumer(None, host=rudderstack.analytics.get_env.HOST_URL, 
-        write_key=rudderstack.analytics.get_env.TEST_SECRET, proxies='203.243.63.16:80')
+        consumer = Consumer(None, host=HOST_URL, 
+        write_key=TEST_SECRET, proxies='203.243.63.16:80')
         track = {
             'type': 'track',
             'event': 'python event',

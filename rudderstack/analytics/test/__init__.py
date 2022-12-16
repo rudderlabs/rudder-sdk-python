@@ -9,7 +9,7 @@ from rudderstack.analytics.client import Client
 
 def all_names():
     for _, modname, _ in pkgutil.iter_modules(__path__):
-        yield 'analytics.test.' + modname
+        yield 'rudderstack.analytics.test.test_' + modname
 
 
 def all():
@@ -45,9 +45,9 @@ class TestInit(unittest.TestCase):
 
     def test_host(self):
         self.assertIsNone(analytics.default_client)
-        analytics.host = 'test-host'
+        analytics.host = 'https://test-host/v1/batch'
         analytics.flush()
-        self.assertEqual(analytics.default_client.host, 'test-host')
+        self.assertEqual(analytics.default_client.host, 'https://test-host/v1/batch')
 
     def test_max_queue_size(self):
         self.assertIsNone(analytics.default_client)
