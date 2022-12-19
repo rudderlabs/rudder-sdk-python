@@ -1,6 +1,6 @@
 name: Build
 on:
-  workflow_dispatch:
+  # workflow_dispatch:
   pull_request:
     branches: ['master']
     types: ['opened', 'reopened', 'synchronize']
@@ -9,6 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
     # steps:
@@ -29,12 +30,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
-          python -m pip freeze > requirements.txt
-          python -m pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip list --format=freeze > requirements.txt; fi
+          pip install -r requirements.txt
           
       # - name: Lint with flake8
       #   run: |
@@ -44,5 +46,5 @@ jobs:
       #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test
         run: |
-          pytest
+          python -m pytest
 
