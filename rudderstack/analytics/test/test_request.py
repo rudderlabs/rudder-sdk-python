@@ -5,12 +5,12 @@ import requests
 
 from rudderstack.analytics.request import post, DatetimeSerializer
 from rudderstack.analytics.get_env import TEST_SECRET
-from rudderstack.analytics.get_env import HOST_URL
+from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
 
 class TestRequests(unittest.TestCase):
 
     def test_valid_request(self):
-        res = post(TEST_SECRET,host=HOST_URL, batch=[{
+        res = post(TEST_SECRET,host=TEST_DATA_PLANE_URL, batch=[{
             'userId': 'userId',
             'event': 'python event',
             'type': 'track'
@@ -38,7 +38,7 @@ class TestRequests(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_should_not_timeout(self):
-        res = post(TEST_SECRET,host=HOST_URL, batch=[{
+        res = post(TEST_SECRET,host=TEST_DATA_PLANE_URL, batch=[{
             'userId': 'userId',
             'event': 'python event',
             'type': 'track'
@@ -47,7 +47,7 @@ class TestRequests(unittest.TestCase):
 
     def test_should_timeout(self):
         with self.assertRaises(requests.ReadTimeout):
-            post(TEST_SECRET,host=HOST_URL,
+            post(TEST_SECRET,host=TEST_DATA_PLANE_URL,
              batch=[{
                 'userId': 'userId',
                 'event': 'python event',
@@ -55,7 +55,7 @@ class TestRequests(unittest.TestCase):
             }], timeout=0.0001)
 
     def test_proxies(self):
-        res = post(TEST_SECRET,host=HOST_URL, batch=[{
+        res = post(TEST_SECRET,host=TEST_DATA_PLANE_URL, batch=[{
             'userId': 'userId',
             'event': 'python event',
             'type': 'track',

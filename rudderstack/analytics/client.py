@@ -6,7 +6,7 @@ import atexit
 import json
 
 from dateutil.tz import tzutc
-from rudderstack.analytics.get_env import HOST_URL
+from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
 
 from rudderstack.analytics.utils import guess_timezone, clean
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
@@ -21,7 +21,7 @@ CHANNEL = 'server'
 class Client(object):
     class DefaultConfig(object):
         write_key = None
-        host = HOST_URL
+        host = TEST_DATA_PLANE_URL
         on_error = None
         debug = False
         send = True
