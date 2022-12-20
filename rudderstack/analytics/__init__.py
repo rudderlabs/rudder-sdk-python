@@ -1,12 +1,39 @@
 
+import warnings
 from rudderstack.analytics.version import VERSION
 from rudderstack.analytics.client import Client
-
+import deprecation
 __version__ = VERSION
 
 """Settings."""
 write_key = Client.DefaultConfig.write_key
+
+@property
+@deprecation.deprecated(deprecated_in="2.0",
+                        current_version=__version__,
+                        details="Use the dataPlaneUrl property instead")
+def host(self):
+    warnings.warn('The use of host is deprecated. Use dataPlaneUrl instead', DeprecationWarning)
+    return host
+
+@host.setter
+@deprecation.deprecated(deprecated_in="2.0",
+                        current_version=__version__,
+                        details="Use the dataPlaneUrl property instead")
+def host(self, value: str):
+    warnings.warn('The use of host is deprecated. Use dataPlaneUrl instead', DeprecationWarning)
+    self.host = value
+    
 host = Client.DefaultConfig.host
+
+@property
+def dataPlaneUrl(self):
+    return host
+
+@dataPlaneUrl.setter
+def dataPlaneUrl(self, value: str):
+     self.host = value   
+
 on_error = Client.DefaultConfig.on_error
 debug = Client.DefaultConfig.debug
 send = Client.DefaultConfig.send

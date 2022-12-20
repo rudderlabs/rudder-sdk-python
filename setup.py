@@ -22,7 +22,8 @@ install_requires = [
     "monotonic~=1.5",
     "backoff~=2.1",
     "python-dateutil~=2.2",
-    "python-dotenv~=0.21.0"
+    "python-dotenv~=0.21.0",
+    "deprecation~=2.0.6",
 ]
 
 tests_require = [
