@@ -26,7 +26,6 @@ readme-renderer==32.0
 requests==2.27.1
 requests-toolbelt==0.9.1
 rfc3986==2.0.0
-rudder-sdk-python==2.2.1
 setuptools==58.1.0
 six==1.16.0
 tomli==2.0.1
