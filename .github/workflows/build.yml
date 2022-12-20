@@ -46,4 +46,6 @@ jobs:
       - name: Test
         run: |
           python -m pytest
-
+        env:
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+          TEST_DATA_PLANE_URL: ${{ secrets.TEST_DATA_PLANE_URL }}
