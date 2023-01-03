@@ -2,6 +2,7 @@ from datetime import date, datetime
 import unittest
 import time
 from unittest import mock
+from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 from version import VERSION
 from client import Client
@@ -9,6 +10,7 @@ from get_env import TEST_SECRET
 
 class TestClient(unittest.TestCase):
 
+    
     def fail(self, e, batch):
         """Mark the failure handler"""
         self.failed = True
@@ -343,6 +345,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(consumer.timeout, 15)
 
     def test_proxies(self):
-        client = Client(TEST_SECRET, proxies='203.243.63.16:80')
+        client = Client(TEST_SECRET, proxies=TEST_PROXY)
         success, msg = client.identify('userId', {'trait': 'value'})
         self.assertTrue(success)

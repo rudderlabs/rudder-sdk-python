@@ -3,6 +3,8 @@ from unittest import mock
 import time
 import json
 
+from rudderstack.analytics.test.test_constants import TEST_PROXY
+
 try:
     from queue import Queue
 except ImportError:
@@ -216,7 +218,7 @@ class TestConsumer(unittest.TestCase):
     @classmethod
     def test_proxies(cls):
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, proxies='203.243.63.16:80')
+        write_key=TEST_SECRET, proxies=TEST_PROXY)
         track = {
             'type': 'track',
             'event': 'python event',
