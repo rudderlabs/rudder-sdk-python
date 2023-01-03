@@ -5,8 +5,8 @@ from rudderstack.analytics.get_env import TEST_SECRET
 
 class TestModule(unittest.TestCase):
 
-    # def failed(self):
-    #     self.failed = True
+    def failed(self):
+        self.failed = True
 
     def setUp(self):
         self.failed = False
