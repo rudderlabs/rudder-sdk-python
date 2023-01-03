@@ -4,8 +4,7 @@ import json
 import requests
 
 from rudderstack.analytics.request import post, DatetimeSerializer
-from rudderstack.analytics.get_env import TEST_SECRET
-from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
+from rudderstack.analytics.get_env import TEST_SECRET, TEST_DATA_PLANE_URL
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 class TestRequests(unittest.TestCase):

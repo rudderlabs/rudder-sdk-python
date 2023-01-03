@@ -12,8 +12,7 @@ except ImportError:
 
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
 from rudderstack.analytics.request import APIError
-from rudderstack.analytics.get_env import TEST_SECRET
-from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
+from rudderstack.analytics.get_env import TEST_SECRET, TEST_DATA_PLANE_URL
 
 
 class TestConsumer(unittest.TestCase):
