@@ -1,12 +1,12 @@
 import logging
 import rudderstack.analytics as rudder_analytics
 from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
-from rudderstack.analytics.get_env import TEST_SECRET
+from rudderstack.analytics.get_env import TEST_WRITE_KEY
 
 logging.basicConfig()
 logging.getLogger('rudder').setLevel('DEBUG')
 
-rudder_analytics.write_key = TEST_SECRET
+rudder_analytics.write_key = TEST_WRITE_KEY
 rudder_analytics.data_plane_url = TEST_DATA_PLANE_URL
 rudder_analytics.debug = True
 

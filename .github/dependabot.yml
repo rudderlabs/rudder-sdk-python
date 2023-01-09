@@ -3,7 +3,11 @@ updates:
 - package-ecosystem: pip
   directory: "/"
   schedule:
-    interval: daily
+    interval: weekly
   open-pull-requests-limit: 10
   reviewers:
-  - heitorsampaio
+  - itsdebs
+- package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'

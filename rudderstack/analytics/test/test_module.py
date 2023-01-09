@@ -1,7 +1,7 @@
 import unittest
 
 import rudderstack.analytics as analytics
-from rudderstack.analytics.get_env import TEST_SECRET
+from rudderstack.analytics.get_env import TEST_WRITE_KEY
 
 class TestModule(unittest.TestCase):
 
@@ -10,7 +10,7 @@ class TestModule(unittest.TestCase):
 
     def setUp(self):
         self.failed = False
-        analytics.write_key = TEST_SECRET
+        analytics.write_key = TEST_WRITE_KEY
         analytics.on_error = self.failed
 
     def test_no_write_key(self):

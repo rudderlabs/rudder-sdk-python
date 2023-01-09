@@ -12,7 +12,7 @@ except ImportError:
 
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
 from rudderstack.analytics.request import APIError
-from rudderstack.analytics.get_env import TEST_SECRET, TEST_DATA_PLANE_URL
+from rudderstack.analytics.get_env import TEST_WRITE_KEY, TEST_DATA_PLANE_URL
 
 
 class TestConsumer(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestConsumer(unittest.TestCase):
     def test_upload(self):
         q = Queue()
         consumer = Consumer(q, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET)
+        write_key=TEST_WRITE_KEY)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -63,7 +63,7 @@ class TestConsumer(unittest.TestCase):
 
         upload_interval = 0.3
         consumer = Consumer(q, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, upload_size=10,
+        write_key=TEST_WRITE_KEY, upload_size=10,
                             upload_interval=upload_interval)
         with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
@@ -84,7 +84,7 @@ class TestConsumer(unittest.TestCase):
         upload_interval = 0.5
         upload_size = 10
         consumer = Consumer(q,host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, upload_size=upload_size,
+        write_key=TEST_WRITE_KEY, upload_size=upload_size,
                             upload_interval=upload_interval)
         with mock.patch('rudderstack.analytics.consumer.post') as mock_post:
             consumer.start()
@@ -102,7 +102,7 @@ class TestConsumer(unittest.TestCase):
     @classmethod
     def test_request(cls):
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET)
+        write_key=TEST_WRITE_KEY)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -146,24 +146,24 @@ class TestConsumer(unittest.TestCase):
     def test_request_retry(self):
         # we should retry on general errors
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET,)
+        write_key=TEST_WRITE_KEY,)
         self._test_request_retry(consumer, Exception('generic exception'), 2)
 
         # we should retry on server errors
         consumer = Consumer(None,host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET,)
+        write_key=TEST_WRITE_KEY,)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 2)
 
         # we should retry on HTTP 429 errors
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET,)
+        write_key=TEST_WRITE_KEY,)
         self._test_request_retry(consumer, APIError(
             429, 'code', 'Too Many Requests'), 2)
 
         # we should NOT retry on other client errors
         consumer = Consumer(None,host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET,)
+        write_key=TEST_WRITE_KEY,)
         api_error = APIError(400, 'code', 'Client Errors')
         try:
             self._test_request_retry(consumer, api_error, 1)
@@ -174,13 +174,13 @@ class TestConsumer(unittest.TestCase):
 
         # test for number of exceptions raise > retries value
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, retries=3)
+        write_key=TEST_WRITE_KEY, retries=3)
         self._test_request_retry(consumer, APIError(
             500, 'code', 'Internal Server Error'), 3)
 
     def test_pause(self):
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET,)
+        write_key=TEST_WRITE_KEY,)
         consumer.pause()
         self.assertFalse(consumer.running)
 
@@ -188,7 +188,7 @@ class TestConsumer(unittest.TestCase):
         q = Queue()
         consumer = Consumer(
             q,host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, upload_size=100000, upload_interval=3)
+        write_key=TEST_WRITE_KEY, upload_size=100000, upload_interval=3)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -217,7 +217,7 @@ class TestConsumer(unittest.TestCase):
     @classmethod
     def test_proxies(cls):
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_SECRET, proxies=TEST_PROXY)
+        write_key=TEST_WRITE_KEY, proxies=TEST_PROXY)
         track = {
             'type': 'track',
             'event': 'python event',
