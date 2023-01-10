@@ -12,6 +12,8 @@ rudder_analytics.debug = True
 
 rudder_analytics.track(user_id = 'user', event = 'simple_track', properties = {
   'key1' : 'val1'
+}, context= {
+  'key1' : 'val1'
 })
 
 rudder_analytics.identify('user_id', {
