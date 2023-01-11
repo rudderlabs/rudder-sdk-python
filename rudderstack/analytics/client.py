@@ -97,6 +97,8 @@ class Client(object):
                  anonymous_id=None, integrations=None, message_id=None):
         traits = traits or {}
         context = context or {}
+        # putting traits inside context
+        context['traits'] = traits
         integrations = integrations or {}
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('traits', traits, dict)
@@ -108,7 +110,7 @@ class Client(object):
             'context': context,
             'type': 'identify',
             'userId': user_id,
-            'traits': traits,
+            # 'traits': traits, #traits not needed at root level
             'messageId': message_id,
         }
 
