@@ -248,6 +248,10 @@ class Client(object):
         if message_id is None:
             message_id = uuid4()
 
+        # default integrations should be "All": True
+        if msg['integrations'] == {} :
+            msg['integrations'] = {"All" : True}
+            
         require('integrations', msg['integrations'], dict)
         require('type', msg['type'], str)
         require('timestamp', timestamp, datetime)
@@ -261,7 +265,6 @@ class Client(object):
             'name': 'analytics-python',
             'version': VERSION
         }
-
         msg['userId'] = stringify_id(msg.get('userId', None))
         msg['anonymousId'] = stringify_id(msg.get('anonymousId', None))
         msg['channel'] = CHANNEL

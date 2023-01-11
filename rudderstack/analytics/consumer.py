@@ -20,7 +20,7 @@ class Consumer(Thread):
     log = logging.getLogger('rudderstack')
 
     def __init__(self, queue, write_key, upload_size=100, host=None,
-                 on_error=None, upload_interval=0.5, gzip=False, retries=10,
+                 on_error=None, upload_interval=0.5, gzip=True, retries=10,
                  timeout=15, proxies=None):
         """Create a consumer thread."""
         Thread.__init__(self)

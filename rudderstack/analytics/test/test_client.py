@@ -311,12 +311,17 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(msg['traits'], {'birthdate': date(1981, 2, 2)})
 
+    def assert_gzip_enabled_by_default(self):
+         client = Client(TEST_WRITE_KEY, on_error=self.fail)
+         self.assertTrue(client.gzip)
+
     def test_gzip(self):
         client = Client(TEST_WRITE_KEY, on_error=self.fail, gzip=True)
         for _ in range(10):
             client.identify('userId', {'trait': 'value'})
         client.flush()
         self.assertFalse(self.failed)
+
 
     def test_user_defined_upload_size(self):
         client = Client(write_key = TEST_WRITE_KEY, on_error=self.fail,
