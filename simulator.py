@@ -96,8 +96,6 @@ analytics.dataPlaneUrl = options.dataPlaneUrl
 
 analytics.gzip = options.gzip    
 
-print(analytics.gzip)
-
 log = logging.getLogger('rudderstack')
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
