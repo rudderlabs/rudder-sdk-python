@@ -95,7 +95,7 @@ class TestClient(unittest.TestCase):
         self.assertTrue(success)
         self.assertFalse(self.failed)
 
-        self.assertEqual(msg['traits'], {'trait': 'value'})
+        self.assertEqual(msg['context']['traits'], {'trait': 'value'})
         self.assertTrue(isinstance(msg['timestamp'], str))
         self.assertTrue(isinstance(msg['messageId'], str))
         self.assertEqual(msg['userId'], 'userId')
@@ -113,7 +113,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['timestamp'], '2014-09-03T00:00:00+00:00')
         self.assertEqual(msg['integrations'], {'Amplitude': True})
         self.assertEqual(msg['context']['ip'], '192.168.0.1')
-        self.assertEqual(msg['traits'], {'trait': 'value'})
+        self.assertEqual(msg['context']['traits'], {'trait': 'value'})
         self.assertEqual(msg['anonymousId'], 'anonymousId')
         self.assertEqual(msg['context']['library'], {
             'name': 'analytics-python',
@@ -309,7 +309,11 @@ class TestClient(unittest.TestCase):
         self.assertTrue(success)
         self.assertFalse(self.failed)
 
-        self.assertEqual(msg['traits'], {'birthdate': date(1981, 2, 2)})
+        self.assertEqual(msg['context']['traits'], {'birthdate': date(1981, 2, 2)})
+
+    def assert_gzip_enabled_by_default(self):
+         client = Client(TEST_WRITE_KEY, on_error=self.fail)
+         self.assertTrue(client.gzip)
 
     def test_gzip(self):
         client = Client(TEST_WRITE_KEY, on_error=self.fail, gzip=True)
@@ -317,6 +321,7 @@ class TestClient(unittest.TestCase):
             client.identify('userId', {'trait': 'value'})
         client.flush()
         self.assertFalse(self.failed)
+
 
     def test_user_defined_upload_size(self):
         client = Client(write_key = TEST_WRITE_KEY, on_error=self.fail,

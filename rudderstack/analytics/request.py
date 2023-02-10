@@ -13,7 +13,7 @@ from rudderstack.analytics.utils import remove_trailing_slash
 _session = sessions.Session()
 
 
-def post(write_key, host=None, gzip=False, timeout=15, proxies=None, **kwargs):
+def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     """Post the `kwargs` to the API"""
     log = logging.getLogger('rudderstack')
     body = kwargs
@@ -28,12 +28,7 @@ def post(write_key, host=None, gzip=False, timeout=15, proxies=None, **kwargs):
     }
     if gzip:
         headers['Content-Encoding'] = 'gzip'
-        buf = BytesIO()
-        with GzipFile(fileobj=buf, mode='w') as gz:
-            # 'data' was produced by json.dumps(),
-            # whose default encoding is utf-8.
-            gz.write(data.encode('utf-8'))
-        data = buf.getvalue()
+        data = _gzip_json(data)
 
     kwargs = {
         "data": data,
@@ -59,6 +54,13 @@ def post(write_key, host=None, gzip=False, timeout=15, proxies=None, **kwargs):
     except ValueError:
         raise APIError(res.status_code, 'unknown', res.text)
 
+def _gzip_json(data):
+    buf = BytesIO()
+    with GzipFile(fileobj=buf, mode='w') as gz:
+        # 'data' was produced by json.dumps(),
+        # whose default encoding is utf-8.
+        gz.write(data.encode('utf-8'))
+    return buf.getvalue()
 
 class APIError(Exception):
 

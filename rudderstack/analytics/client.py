@@ -97,6 +97,8 @@ class Client(object):
                  anonymous_id=None, integrations=None, message_id=None):
         traits = traits or {}
         context = context or {}
+        # putting traits inside context
+        context['traits'] = traits
         integrations = integrations or {}
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('traits', traits, dict)
@@ -108,7 +110,7 @@ class Client(object):
             'context': context,
             'type': 'identify',
             'userId': user_id,
-            'traits': traits,
+            # 'traits': traits, #traits not needed at root level
             'messageId': message_id,
         }
 
@@ -248,6 +250,10 @@ class Client(object):
         if message_id is None:
             message_id = uuid4()
 
+        # default integrations should be "All": True
+        if msg['integrations'] == {} :
+            msg['integrations'] = {"All" : True}
+            
         require('integrations', msg['integrations'], dict)
         require('type', msg['type'], str)
         require('timestamp', timestamp, datetime)
@@ -261,7 +267,6 @@ class Client(object):
             'name': 'analytics-python',
             'version': VERSION
         }
-
         msg['userId'] = stringify_id(msg.get('userId', None))
         msg['anonymousId'] = stringify_id(msg.get('anonymousId', None))
         msg['channel'] = CHANNEL

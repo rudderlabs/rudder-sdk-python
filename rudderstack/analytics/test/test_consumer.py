@@ -201,9 +201,9 @@ class TestConsumer(unittest.TestCase):
         def mock_post_fn(_, data, **kwargs):
             res = mock.Mock()
             res.status_code = 200
-            self.assertTrue(len(data.encode()) < 500000,
+            self.assertTrue(len(data) < 500000,
                             'batch size (%d) exceeds 500KB limit'
-                            % len(data.encode()))
+                            % len(data))
             return res
 
         with mock.patch('rudderstack.analytics.request._session.post',
