@@ -4,36 +4,35 @@ import monotonic
 import backoff
 import json
 
-from rudder_analytics.request import post, APIError, DatetimeSerializer
+from rudderstack.analytics.request import post, APIError, DatetimeSerializer
 
-try:
-    from queue import Empty
-except ImportError:
-    from Queue import Empty
-"""4MB"""
-# Our servers only accept batches less than 4MB. Here limit is set slightly
+from queue import Empty
+
+MAX_MSG_SIZE = 32 << 10
+
+# Our servers only accept batches less than 500KB. Here limit is set slightly
 # lower to leave space for extra data that will be added later, eg. "sentAt".
-MAX_MSG_SIZE = (4 << 20) - 1024
-# Both are same in case a batch contains only one message
-BATCH_SIZE_LIMIT = MAX_MSG_SIZE 
+BATCH_SIZE_LIMIT = 475000
 
 
 class Consumer(Thread):
     """Consumes the messages from the client's queue."""
-    log = logging.getLogger('rudder')
+    log = logging.getLogger('rudderstack')
 
-    def __init__(self, queue, write_key, flush_at=100, host=None,
-                 on_error=None, flush_interval=0.5, retries=10, timeout=15):
+    def __init__(self, queue, write_key, upload_size=100, host=None,
+                 on_error=None, upload_interval=0.5, gzip=True, retries=10,
+                 timeout=15, proxies=None):
         """Create a consumer thread."""
         Thread.__init__(self)
         # Make consumer a daemon thread so that it doesn't block program exit
         self.daemon = True
-        self.flush_at = flush_at
-        self.flush_interval = flush_interval
+        self.upload_size = upload_size
+        self.upload_interval = upload_interval
         self.write_key = write_key
         self.host = host
         self.on_error = on_error
         self.queue = queue
+        self.gzip = gzip
         # It's important to set running in the constructor: if we are asked to
         # pause immediately after construction, we might set running to True in
         # run() *after* we set it to False in pause... and keep running
@@ -41,6 +40,7 @@ class Consumer(Thread):
         self.running = True
         self.retries = retries
         self.timeout = timeout
+        self.proxies = proxies
 
     def run(self):
         """Runs the consumer."""
@@ -71,9 +71,9 @@ class Consumer(Thread):
                 self.on_error(e, batch)
         finally:
             # mark items as acknowledged from queue
-            for item in batch:
+            for _ in batch:
                 self.queue.task_done()
-            return success
+        return success
 
     def next(self):
         """Return the next batch of items to upload."""
@@ -83,13 +83,13 @@ class Consumer(Thread):
         start_time = monotonic.monotonic()
         total_size = 0
 
-        while len(items) < self.flush_at:
+        while len(items) < self.upload_size:
             elapsed = monotonic.monotonic() - start_time
-            if elapsed >= self.flush_interval:
+            if elapsed >= self.upload_interval:
                 break
             try:
                 item = queue.get(
-                    block=True, timeout=self.flush_interval - elapsed)
+                    block=True, timeout=self.upload_interval - elapsed)
                 item_size = len(json.dumps(
                     item, cls=DatetimeSerializer).encode())
                 if item_size > MAX_MSG_SIZE:
@@ -104,6 +104,8 @@ class Consumer(Thread):
                     break
             except Empty:
                 break
+            except Exception as e:
+                self.log.exception('Exception: %s', e)
 
         return items
 
@@ -126,6 +128,7 @@ class Consumer(Thread):
             max_tries=self.retries + 1,
             giveup=fatal_exception)
         def send_request():
-            post(self.write_key, self.host, timeout=self.timeout, batch=batch)
+            post(self.write_key, self.host, gzip=self.gzip,
+                 timeout=self.timeout, batch=batch, proxies=self.proxies)
 
         send_request()

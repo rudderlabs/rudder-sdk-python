@@ -15,10 +15,14 @@ pip install rudder-sdk-python
 ## Initializing the RudderStack Client
 
 ```python
-import rudder_analytics
+import rudderstack.analytics as analytics
 
-rudder_analytics.write_key = <SOURCE_WRITE_KEY>
-rudder_analytics.data_plane_url = <DATA_PLANE_URL>
+analytics.write_key = <SOURCE_WRITE_KEY>
+analytics.on_error = <FAILURE CALLBACK>
+analytics.debug = <True or False>
+analytics.dataPlaneUrl = <RUDDERSTACK_DATA_PLANE_URL>
+
+analytics.gzip = <True or False>
 ```
 
 ## Sending Events
@@ -27,6 +31,12 @@ Once the RudderStack client is initialized, you can use it to send your customer
 
 ```python
 rudder_analytics.track('developer_user_id', 'Simple Track Event', {
+  'key1': 'val1'
+})
+analytics.track('user_id', 'Simple Track Event', anonymous_id='anonymousId',
+  properties={
+  'key1': 'val1'
+}, context={
   'key1': 'val1'
 })
 ```

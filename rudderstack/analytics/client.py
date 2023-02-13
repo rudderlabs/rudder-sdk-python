@@ -3,33 +3,56 @@ from uuid import uuid4
 import logging
 import numbers
 import atexit
+import json
 
 from dateutil.tz import tzutc
-from six import string_types
+from rudderstack.analytics.get_env import TEST_DATA_PLANE_URL
 
-from rudder_analytics.utils import guess_timezone, clean
-from rudder_analytics.consumer import Consumer
-from rudder_analytics.request import post
-from rudder_analytics.version import VERSION
+from rudderstack.analytics.utils import guess_timezone, clean
+from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
+from rudderstack.analytics.request import post, DatetimeSerializer
+from rudderstack.analytics.version import VERSION
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 
-
-ID_TYPES = (numbers.Number, string_types)
+ID_TYPES = (numbers.Number, str)
+CHANNEL = 'server'
 
 class Client(object):
-    """Create a new Rudder client."""
-    log = logging.getLogger('rudder')
-    anonymoys_id = str(uuid4())
+    class DefaultConfig(object):
+        write_key = None
+        host = TEST_DATA_PLANE_URL
+        on_error = None
+        debug = False
+        send = True
+        sync_mode = False
+        max_queue_size = 10000
+        gzip = False
+        timeout = 15
+        max_retries = 10
+        proxies = None
+        thread = 1
+        upload_interval = 0.5
+        upload_size = 100
 
-    def __init__(self, write_key=None, host='https://hosted.rudderlabs.com', debug=False,
-                 max_queue_size=10000, send=True, on_error=None, flush_at=100,
-                 flush_interval=0.5, max_retries=3, sync_mode=False,
-                 timeout=15, thread=1):
-        require('write_key', write_key, string_types)
+    """Create a new rudderstack client."""
+    log = logging.getLogger('rudderstack')
+    def __init__(self,
+                 write_key=DefaultConfig.write_key,
+                 host=DefaultConfig.host,
+                 debug=DefaultConfig.debug,
+                 max_queue_size=DefaultConfig.max_queue_size,
+                 send=DefaultConfig.send,
+                 on_error=DefaultConfig.on_error,
+                 gzip=DefaultConfig.gzip,
+                 max_retries=DefaultConfig.max_retries,
+                 sync_mode=DefaultConfig.sync_mode,
+                 timeout=DefaultConfig.timeout,
+                 proxies=DefaultConfig.proxies,
+                 thread=DefaultConfig.thread,
+                 upload_size=DefaultConfig.upload_size,
+                 upload_interval=DefaultConfig.upload_interval,):
+        require('write_key', write_key, str)
 
         self.queue = queue.Queue(max_queue_size)
         self.write_key = write_key
@@ -38,7 +61,9 @@ class Client(object):
         self.send = send
         self.sync_mode = sync_mode
         self.host = host
+        self.gzip = gzip
         self.timeout = timeout
+        self.proxies = proxies
 
         if debug:
             self.log.setLevel(logging.DEBUG)
@@ -54,12 +79,13 @@ class Client(object):
             # to call flush().
             if send:
                 atexit.register(self.join)
-            for n in range(thread):
+            for _ in range(thread):
                 self.consumers = []
                 consumer = Consumer(
                     self.queue, write_key, host=host, on_error=on_error,
-                    flush_at=flush_at, flush_interval=flush_interval,
-                    retries=max_retries, timeout=timeout,
+                    upload_size=upload_size, upload_interval=upload_interval,
+                    gzip=gzip, retries=max_retries, timeout=timeout,
+                    proxies=proxies,
                 )
                 self.consumers.append(consumer)
 
@@ -71,11 +97,11 @@ class Client(object):
                  anonymous_id=None, integrations=None, message_id=None):
         traits = traits or {}
         context = context or {}
+        # putting traits inside context
+        context['traits'] = traits
         integrations = integrations or {}
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('traits', traits, dict)
-
-       
 
         msg = {
             'integrations': integrations,
@@ -84,7 +110,7 @@ class Client(object):
             'context': context,
             'type': 'identify',
             'userId': user_id,
-            'traits': traits,
+            # 'traits': traits, #traits not needed at root level
             'messageId': message_id,
         }
 
@@ -98,7 +124,7 @@ class Client(object):
         integrations = integrations or {}
         require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
         require('properties', properties, dict)
-        require('event', event, string_types)
+        require('event', event, str)
 
         msg = {
             'integrations': integrations,
@@ -167,9 +193,9 @@ class Client(object):
         require('properties', properties, dict)
 
         if name:
-            require('name', name, string_types)
+            require('name', name, str)
         if category:
-            require('category', category, string_types)
+            require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -196,9 +222,9 @@ class Client(object):
         require('properties', properties, dict)
 
         if name:
-            require('name', name, string_types)
+            require('name', name, str)
         if category:
-            require('category', category, string_types)
+            require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -214,7 +240,7 @@ class Client(object):
         }
 
         return self._enqueue(msg)
-
+    
     def _enqueue(self, msg):
         """Push a new `msg` onto the queue, return `(success, msg)`"""
         timestamp = msg['timestamp']
@@ -224,30 +250,33 @@ class Client(object):
         if message_id is None:
             message_id = uuid4()
 
+        # default integrations should be "All": True
+        if msg['integrations'] == {} :
+            msg['integrations'] = {"All" : True}
+            
         require('integrations', msg['integrations'], dict)
-        require('type', msg['type'], string_types)
+        require('type', msg['type'], str)
         require('timestamp', timestamp, datetime)
         require('context', msg['context'], dict)
 
-        # add anonymousId to the message if not passed
-        # anonymous id need not be forced.
-        # msg['anonymousId'] = msg['anonymousId'] or self.anonymoys_id
-
-        
         # add common
         timestamp = guess_timezone(timestamp)
         msg['timestamp'] = timestamp.isoformat()
         msg['messageId'] = stringify_id(message_id)
         msg['context']['library'] = {
-            'name': 'rudder-analytics-python',
+            'name': 'analytics-python',
             'version': VERSION
         }
-
         msg['userId'] = stringify_id(msg.get('userId', None))
         msg['anonymousId'] = stringify_id(msg.get('anonymousId', None))
-
+        msg['channel'] = CHANNEL
         msg = clean(msg)
         self.log.debug('queueing: %s', msg)
+
+        # Check message size.
+        msg_size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
+        if msg_size > MAX_MSG_SIZE:
+            raise RuntimeError('Message exceeds %skb limit. (%s)', str(int(MAX_MSG_SIZE / 1024)), str(msg))
 
         # if send is False, return msg as if it was successfully queued
         if not self.send:
@@ -255,7 +284,8 @@ class Client(object):
 
         if self.sync_mode:
             self.log.debug('enqueued with blocking %s.', msg['type'])
-            post(self.write_key, self.host, timeout=self.timeout, batch=[msg])
+            post(self.write_key, self.host, gzip=self.gzip,
+                 timeout=self.timeout, proxies=self.proxies, batch=[msg])
 
             return True, msg
 
@@ -264,7 +294,7 @@ class Client(object):
             self.log.debug('enqueued %s.', msg['type'])
             return True, msg
         except queue.Full:
-            self.log.warning('rudder-analytics-python queue is full')
+            self.log.warning('analytics-python queue is full')
             return False, msg
 
     def flush(self):
@@ -303,6 +333,6 @@ def require(name, field, data_type):
 def stringify_id(val):
     if val is None:
         return None
-    if isinstance(val, string_types):
+    if isinstance(val, str):
         return val
     return str(val)
