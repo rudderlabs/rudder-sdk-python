@@ -1,29 +1,44 @@
 from datetime import date, datetime
-from dateutil.tz import tzutc
+from io import BytesIO
+from gzip import GzipFile
 import logging
 import json
+from dateutil.tz import tzutc
 from requests.auth import HTTPBasicAuth
 from requests import sessions
 
-from rudder_analytics.version import VERSION
-from rudder_analytics.utils import remove_trailing_slash
+from rudderstack.analytics.version import VERSION
+from rudderstack.analytics.utils import remove_trailing_slash
 
 _session = sessions.Session()
 
 
-def post(write_key, host=None, timeout=15, **kwargs):
+def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     """Post the `kwargs` to the API"""
-    log = logging.getLogger('rudder')
+    log = logging.getLogger('rudderstack')
     body = kwargs
     body["sentAt"] = datetime.utcnow().replace(tzinfo=tzutc()).isoformat()
-    url = remove_trailing_slash(host or 'https://hosted.rudderlabs.com') + '/v1/batch'
+    url = remove_trailing_slash(host or 'https://api.rudderstack.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
     log.debug('making request: %s', data)
     headers = {
         'Content-Type': 'application/json',
-        'User-Agent': 'rudderstack-python/' + VERSION
+        'User-Agent': 'analytics-python/' + VERSION
     }
+    if gzip:
+        headers['Content-Encoding'] = 'gzip'
+        data = _gzip_json(data)
+
+    kwargs = {
+        "data": data,
+        "auth": auth,
+        "headers": headers,
+        "timeout": 15,
+    }
+
+    if proxies:
+        kwargs['proxies'] = proxies
 
     res = _session.post(url, data=data, auth=auth,
                         headers=headers, timeout=timeout)
@@ -39,6 +54,13 @@ def post(write_key, host=None, timeout=15, **kwargs):
     except ValueError:
         raise APIError(res.status_code, 'unknown', res.text)
 
+def _gzip_json(data):
+    buf = BytesIO()
+    with GzipFile(fileobj=buf, mode='w') as gz:
+        # 'data' was produced by json.dumps(),
+        # whose default encoding is utf-8.
+        gz.write(data.encode('utf-8'))
+    return buf.getvalue()
 
 class APIError(Exception):
 
@@ -48,7 +70,7 @@ class APIError(Exception):
         self.code = code
 
     def __str__(self):
-        msg = "[Rudder] {0}: {1} ({2})"
+        msg = "[rudderstack] {0}: {1} ({2})"
         return msg.format(self.code, self.message, self.status)
 
 
