@@ -31,6 +31,9 @@ If applicable, add screenshots to help explain your problem.
 **Version of the _Python_ SDK**
 Please mention the version of the Rudder Python SDK you are using (e.g., Python SDK v1.0.0).
 
+**Version of the _Python_**
+Please mention the version of the Python you are using (e.g., Python v1.0.0).
+
 **SDK initialisation snippet**
 Share the code snippet used for initializing the Python SDK.
 
