@@ -27,7 +27,7 @@ class Client(object):
         send = True
         sync_mode = False
         max_queue_size = 10000
-        gzip = False
+        gzip = True
         timeout = 15
         max_retries = 10
         proxies = None
