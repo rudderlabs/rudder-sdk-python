@@ -7,7 +7,7 @@ logging.basicConfig()
 logging.getLogger('rudder').setLevel('DEBUG')
 
 analytics.write_key = TEST_WRITE_KEY
-analytics.host = "some_random_url"
+analytics.host = "some_random_url" # Do not use this
 analytics.dataPlaneUrl = TEST_DATA_PLANE_URL
 analytics.debug = True
 properties = {
