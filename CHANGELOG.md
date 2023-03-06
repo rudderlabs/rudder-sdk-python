@@ -19,3 +19,6 @@ All notable changes to this project will be documented in this file.
 ## Fixes
 - Default gzip value is set to True
 
+## [2.0.2]
+## Fixes
+- Fixed dataPlaneUrl setter issue [#20](https://github.com/rudderlabs/rudder-sdk-python/issues/20)
