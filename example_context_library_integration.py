@@ -7,9 +7,9 @@ logging.basicConfig()
 logging.getLogger('rudder').setLevel('DEBUG')
 
 analytics.write_key = TEST_WRITE_KEY
+analytics.host = "some_random_url"
 analytics.dataPlaneUrl = TEST_DATA_PLANE_URL
 analytics.debug = True
-
 properties = {
   "library": {
     "application": 'Rudder Desktop',
@@ -33,7 +33,7 @@ context = {
   },
   "os": {
     "name": 'macOS',
-    "version": '2.0.1'
+    "version": '11'
   },
   "locale": 'en-US'
 }
@@ -46,7 +46,7 @@ context_with_library = {
   },
   "os": {
     "name": 'macOS',
-    "version": '2.0.1'
+    "version": '11'
   },
   "locale": 'en-US',
   'library': {
