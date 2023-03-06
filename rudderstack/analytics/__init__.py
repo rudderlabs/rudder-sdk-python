@@ -28,7 +28,7 @@ host = Client.DefaultConfig.host
 
 @property
 def dataPlaneUrl(self):
-    return host
+    return dataPlaneUrl
 
 @dataPlaneUrl.setter
 def dataPlaneUrl(self, value: str):
@@ -98,7 +98,12 @@ def _proxy(method, *args, **kwargs):
     """Create an analytics client if one doesn't exist and send to it."""
     global default_client
     if not default_client:
-        default_client = Client(write_key, host=host, debug=debug,
+        if isinstance(dataPlaneUrl,str) and dataPlaneUrl != "":
+            finalDataplaneUrl = dataPlaneUrl
+        else:
+            finalDataplaneUrl = host    
+        
+        default_client = Client(write_key, host=finalDataplaneUrl, debug=debug,
                                 max_queue_size=max_queue_size,
                                 send=send, on_error=on_error,
                                 gzip=gzip, max_retries=max_retries,
