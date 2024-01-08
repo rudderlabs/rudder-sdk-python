@@ -18,12 +18,12 @@ framework to process your event data on the fly.
 '''
 
 install_requires = [
-    "requests~=2.7",
-    "monotonic~=1.5",
-    "backoff~=2.1",
-    "python-dateutil~=2.2",
-    "python-dotenv~=0.21.0",
-    "deprecation~=2.0.6",
+    "requests>=2.8,<3.0",
+    "monotonic>=1.5,<2.0",
+    "backoff>=2.1,<3.0",
+    "python-dateutil>=2.2,<3.0",
+    "python-dotenv>=0.21.0,<0.22.0",
+    "deprecation>=2.0.6,<3.0.0",
 ]
 
 tests_require = [
