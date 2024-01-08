@@ -276,7 +276,7 @@ class Client(object):
         # Check message size.
         msg_size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
         if msg_size > MAX_MSG_SIZE:
-            raise RuntimeError('Message exceeds %skb limit. (%s)', str(int(MAX_MSG_SIZE / 1024)), str(msg))
+            raise RuntimeError(f'Message exceeds {str(int(MAX_MSG_SIZE / 1024))}kb limit. ({str(msg)})')
 
         # if send is False, return msg as if it was successfully queued
         if not self.send:
