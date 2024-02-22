@@ -30,7 +30,7 @@ THE LICENSE STATED BELOW IS EFFECTIVE ON AND AFTER APRIL 21ST, 2020
 
 MIT License
 
-Copyright (c) 2021 RudderStack
+Copyright (c) 2020 RudderStack
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
