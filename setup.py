@@ -22,7 +22,7 @@ install_requires = [
     "monotonic>=1.5,<2.0",
     "backoff>=2.1,<3.0",
     "python-dateutil>=2.2,<3.0",
-    "python-dotenv>=0.21.0,<0.22.0",
+    "python-dotenv>=0.21.0,<2.0.0",
     "deprecation>=2.0.6,<3.0.0",
 ]
 
