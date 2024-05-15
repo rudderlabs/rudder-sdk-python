@@ -27,3 +27,8 @@ All notable changes to this project will be documented in this file.
 ## Fixes
 - Fixed versions of dependencies. Moved to use flexible depencencies.
 - Updated License
+
+## [2.1.1]
+## Fixes
+- Fixed versions of dotenv dependency. Moved to use a higher upper limit (2.0.0)
+- Updated License
