@@ -12,3 +12,4 @@ build
 .python-version
 **/.DS_Store
 .env
+venv
