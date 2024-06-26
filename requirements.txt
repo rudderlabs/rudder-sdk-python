@@ -12,9 +12,7 @@ charset-normalizer==3.3.2
     # via requests
 deprecation==2.1.0
     # via -r requirements.in
-flake8==7.1.0 ; python_version >= "3.8"
-    # via -r requirements.in
-flake8==4.0.1 ; python_version < "3.8"
+flake8==7.1.0
     # via -r requirements.in
 idna==3.7
     # via requests
