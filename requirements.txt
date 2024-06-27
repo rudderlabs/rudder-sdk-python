@@ -47,5 +47,3 @@ six==1.16.0
     # via python-dateutil
 urllib3==2.2.2
     # via requests
-setuptools==65.7.0
-    # via -r requirements.in
