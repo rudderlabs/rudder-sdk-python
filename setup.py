@@ -1,5 +1,5 @@
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup
 from pathlib import Path
 
 # Don't import rudder_analytics module here, since deps may not be installed
@@ -12,6 +12,8 @@ install_requires = [
     "requests>=2.32.3,<3.0",
     "monotonic>=1.6,<2.0",
     "backoff>=2.2.1,<3.0",
+    "python-dateutil>=2.2,<3.0",
+    "python-dotenv>=1.0.1,<2.0.0",
     "deprecation>=2.1.0,<3.0.0",
 ]
 
@@ -29,7 +31,7 @@ setup(
     maintainer='RudderStack',
     maintainer_email='sdk@rudderstack.com',
     test_suite='rudderstack.analytics.test.all',
-    packages=find_packages(exclude=["tests*"]),
+    packages=['rudderstack.analytics', 'rudderstack.analytics.test'],
     python_requires='>=3.8.0',
     license='MIT License',
     install_requires=install_requires,
