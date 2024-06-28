@@ -1,0 +1,10 @@
+backoff==2.2.1
+deprecation==2.1.0
+mock==4.0.3
+monotonic==1.6
+packaging==24.1
+pytest==7.4.4
+requests==2.32.3
+flake8==7.1.0
+python-dateutil==2.9.0
+python-dotenv==1.0.1
