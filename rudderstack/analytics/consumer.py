@@ -8,7 +8,7 @@ from rudderstack.analytics.request import post, APIError, DatetimeSerializer
 
 from queue import Empty
 
-MAX_MSG_SIZE = 32 << 10
+MAX_MSG_SIZE = 4 << 10 << 10
 
 # Our servers only accept batches less than 500KB. Here limit is set slightly
 # lower to leave space for extra data that will be added later, eg. "sentAt".
@@ -94,7 +94,7 @@ class Consumer(Thread):
                     item, cls=DatetimeSerializer).encode())
                 if item_size > MAX_MSG_SIZE:
                     self.log.error(
-                        'Item exceeds 32kb limit, dropping. (%s)', str(item))
+                        'Item exceeds 4mb limit, dropping. (%s)', str(item))
                     continue
                 items.append(item)
                 total_size += item_size
