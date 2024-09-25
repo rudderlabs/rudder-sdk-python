@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import unittest
 
@@ -51,7 +51,7 @@ class TestUtils(unittest.TestCase):
     def test_clean_with_dates(self):
         dict_with_dates = {
             'birthdate': date(1980, 1, 1),
-            'registration': datetime.utcnow(),
+            'registration': datetime.now(timezone.utc),
         }
         self.assertEqual(dict_with_dates, utils.clean(dict_with_dates))
 

@@ -8,10 +8,9 @@ from rudderstack.analytics.request import post, APIError, DatetimeSerializer
 
 from queue import Empty
 
-MAX_MSG_SIZE = 4 << 10 << 10  ## 4 mb
-
-# Our servers only accept batches less than 500KB. Here limit is set slightly
+# Our servers only accept payloads within this limit. Here limit is set slightly
 # lower to leave space for extra data that will be added later, eg. "sentAt".
+MAX_MSG_SIZE = 4 << 10 << 10  ## 4 mb
 BATCH_SIZE_LIMIT = 4 << 10 << 10 ## 4 mb
 
 
