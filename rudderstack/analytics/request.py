@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from io import BytesIO
 from gzip import GzipFile
 import logging
@@ -17,7 +17,7 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     """Post the `kwargs` to the API"""
     log = logging.getLogger('rudderstack')
     body = kwargs
-    body["sentAt"] = datetime.utcnow().replace(tzinfo=tzutc()).isoformat()
+    body["sentAt"] = datetime.now(timezone.utc).replace(tzinfo=tzutc()).isoformat()
     url = remove_trailing_slash(host or 'https://api.rudderstack.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
