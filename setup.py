@@ -18,8 +18,8 @@ install_requires = [
 ]
 
 tests_require = [
-    "mock==4.0.3",
-    "flake8==7.1.0",
+    "mock==5.1.0",
+    "flake8==7.1.1",
 ]
 
 setup(
