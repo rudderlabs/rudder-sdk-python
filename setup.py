@@ -30,7 +30,6 @@ setup(
     author_email='sdk@rudderstack.com',
     maintainer='RudderStack',
     maintainer_email='sdk@rudderstack.com',
-    test_suite='rudderstack.analytics.test.all',
     packages=['rudderstack.analytics', 'rudderstack.analytics.test'],
     python_requires='>=3.8.0',
     license='MIT License',
