@@ -24,7 +24,7 @@ mock==5.1.0
     # via -r requirements.in
 monotonic==1.6
     # via -r requirements.in
-packaging==24.1
+packaging==25.0
     # via
     #   -r requirements.in
     #   deprecation
