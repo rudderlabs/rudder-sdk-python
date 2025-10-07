@@ -20,7 +20,7 @@ iniconfig==2.0.0
     # via pytest
 mccabe==0.7.0
     # via flake8
-mock==5.1.0
+mock==5.2.0
     # via -r requirements.in
 monotonic==1.6
     # via -r requirements.in
