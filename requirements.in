@@ -4,7 +4,7 @@ mock==5.1.0
 monotonic==1.6
 packaging==24.1
 pytest==8.3.3
-requests==2.32.3
+requests==2.32.5
 flake8==7.1.1
 python-dateutil==2.9.0
 python-dotenv==1.0.1

@@ -41,7 +41,7 @@ python-dateutil==2.9.0
     # via -r requirements.in
 python-dotenv==1.0.1
     # via -r requirements.in
-requests==2.32.3
+requests==2.32.5
     # via -r requirements.in
 six==1.16.0
     # via python-dateutil
