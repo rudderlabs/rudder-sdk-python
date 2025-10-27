@@ -39,7 +39,7 @@ pytest==8.3.3
     # via -r requirements.in
 python-dateutil==2.9.0
     # via -r requirements.in
-python-dotenv==1.0.1
+python-dotenv==1.2.1
     # via -r requirements.in
 requests==2.32.3
     # via -r requirements.in
