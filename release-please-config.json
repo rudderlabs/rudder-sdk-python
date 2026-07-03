@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "python",
+  "include-component-in-tag": false,
+  "pull-request-title-pattern": "chore: release ${version}",
+  "always-update": true,
+  "bootstrap-sha": "474d1f3857032430ab6cc1be5cd05a2af37f97f7",
+  "changelog-sections": [
+    { "type": "feat", "section": "Features", "hidden": false },
+    { "type": "fix", "section": "Bug Fixes", "hidden": false },
+    { "type": "perf", "section": "Performance Improvements", "hidden": false },
+    { "type": "deps", "section": "Dependencies", "hidden": false },
+    { "type": "revert", "section": "Reverts", "hidden": false },
+    { "type": "chore", "section": "Miscellaneous", "hidden": false },
+    { "type": "ci", "section": "Miscellaneous", "hidden": false },
+    { "type": "build", "section": "Miscellaneous", "hidden": false },
+    { "type": "refactor", "section": "Miscellaneous", "hidden": false },
+    { "type": "test", "section": "Miscellaneous", "hidden": false },
+    { "type": "docs", "section": "Documentation", "hidden": false }
+  ],
+  "packages": {
+    ".": {
+      "package-name": "rudder-sdk-python",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "rudderstack/analytics/version.py"
+        }
+      ]
+    }
+  }
+}
