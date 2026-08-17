@@ -208,14 +208,17 @@ class TestConsumer(unittest.TestCase):
 
         with mock.patch('rudderstack.analytics.request._session.post',
                         side_effect=mock_post_fn) as mock_post:
-            consumer.start()
             for _ in range(0, n_msgs + 2):
                 q.put(track)
+            consumer.start()
             q.join()
+            consumer.pause()
+            consumer.join()
             self.assertEqual(mock_post.call_count, 2)
 
-    @classmethod
-    def test_proxies(cls):
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_proxies(self, session_post):
+        session_post.return_value = mock.Mock(status_code=200)
         consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
         write_key=TEST_WRITE_KEY, proxies=TEST_PROXY)
         track = {
@@ -224,3 +227,6 @@ class TestConsumer(unittest.TestCase):
             'userId': 'userId'
         }
         consumer.request([track])
+
+        _, kwargs = session_post.call_args
+        self.assertEqual(kwargs['proxies'], TEST_PROXY)

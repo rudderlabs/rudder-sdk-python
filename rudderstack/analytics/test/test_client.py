@@ -325,10 +325,14 @@ class TestClient(unittest.TestCase):
 
     def test_user_defined_upload_size(self):
         client = Client(write_key = TEST_WRITE_KEY, on_error=self.fail,
-                        upload_size=10, upload_interval=3)
-        print("write_key", TEST_WRITE_KEY)
+                        upload_size=10, upload_interval=0.01)
+        consumer = client.consumers[0]
+        consumer.pause()
+        consumer.join()
+
+        batch_sizes = []
         def mock_post_fn(*args, **kwargs):
-            self.assertEqual(len(kwargs['batch']), 10)
+            batch_sizes.append(len(kwargs['batch']))
 
         # the post function should be called 2 times, with a batch size of 10
         # each time.
@@ -336,8 +340,10 @@ class TestClient(unittest.TestCase):
                 as mock_post:
             for _ in range(20):
                 client.identify('userId', {'trait': 'value'})
-            time.sleep(1)
+            consumer.upload()
+            consumer.upload()
             self.assertEqual(mock_post.call_count, 2)
+            self.assertEqual(batch_sizes, [10, 10])
 
     def test_user_defined_timeout(self):
         client = Client(TEST_WRITE_KEY, timeout=10)
@@ -350,6 +356,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(consumer.timeout, 15)
 
     def test_proxies(self):
-        client = Client(TEST_WRITE_KEY, proxies=TEST_PROXY)
-        success, msg = client.identify('userId', {'trait': 'value'})
-        self.assertTrue(success)
+        client = Client(TEST_WRITE_KEY, proxies=TEST_PROXY, send=False)
+
+        self.assertEqual(client.consumers[0].proxies, TEST_PROXY)
