@@ -1,5 +1,6 @@
 from datetime import datetime, date
 import unittest
+from unittest import mock
 import json
 import requests
 
@@ -67,11 +68,15 @@ class TestRequests(unittest.TestCase):
         data = json.dumps(body, cls=DatetimeSerializer)
         self.assertTrue(len(data) > len(_gzip_json(data = data)))
 
-    def test_proxies(self):
-        res = post(TEST_WRITE_KEY,host=TEST_DATA_PLANE_URL, batch=[{
-            'userId': 'userId',
-            'event': 'python event',
-            'type': 'track',
-            'proxies': TEST_PROXY
-        }])
-        self.assertEqual(res.status_code, 200)
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_passes_proxy_and_timeout_to_session(self, session_post):
+        response = mock.Mock(status_code=200)
+        session_post.return_value = response
+
+        self.assertIs(
+            post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, proxies=TEST_PROXY,
+                 timeout=7.5, batch=[]),
+            response)
+        _, kwargs = session_post.call_args
+        self.assertEqual(kwargs['proxies'], TEST_PROXY)
+        self.assertEqual(kwargs['timeout'], 7.5)

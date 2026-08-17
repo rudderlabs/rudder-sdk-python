@@ -34,14 +34,13 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
         "data": data,
         "auth": auth,
         "headers": headers,
-        "timeout": 15,
+        "timeout": timeout,
     }
 
     if proxies:
         kwargs['proxies'] = proxies
 
-    res = _session.post(url, data=data, auth=auth,
-                        headers=headers, timeout=timeout)
+    res = _session.post(url, **kwargs)
 
     if res.status_code == 200:
         log.debug('data uploaded successfully')
