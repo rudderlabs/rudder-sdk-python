@@ -50,48 +50,47 @@ default_client = None
 
 def track(*args, **kwargs):
     """Send a track call."""
-    return _proxy('track', *args, **kwargs)
+    _proxy('track', *args, **kwargs)
 
 
 def identify(*args, **kwargs):
     """Send a identify call."""
-    return _proxy('identify', *args, **kwargs)
+    _proxy('identify', *args, **kwargs)
 
 
 def group(*args, **kwargs):
     """Send a group call."""
-    return _proxy('group', *args, **kwargs)
+    _proxy('group', *args, **kwargs)
 
 
 def alias(*args, **kwargs):
     """Send a alias call."""
-    return _proxy('alias', *args, **kwargs)
+    _proxy('alias', *args, **kwargs)
 
 
 def page(*args, **kwargs):
     """Send a page call."""
-    return _proxy('page', *args, **kwargs)
+    _proxy('page', *args, **kwargs)
 
 
 def screen(*args, **kwargs):
     """Send a screen call."""
-    return _proxy('screen', *args, **kwargs)
+    _proxy('screen', *args, **kwargs)
 
 
 def flush():
     """Tell the client to flush."""
-    return _proxy('flush')
+    _proxy('flush')
 
 
 def join():
     """Block program until the client clears the queue"""
-    return _proxy('join')
+    _proxy('join')
 
 
 def shutdown():
     """Flush all messages and cleanly shutdown the client"""
-    _proxy('flush')
-    _proxy('join')
+    _proxy('shutdown')
 
 
 def _proxy(method, *args, **kwargs):
@@ -110,4 +109,4 @@ def _proxy(method, *args, **kwargs):
                                 sync_mode=sync_mode, timeout=timeout)
 
     fn = getattr(default_client, method)
-    return fn(*args, **kwargs)
+    fn(*args, **kwargs)

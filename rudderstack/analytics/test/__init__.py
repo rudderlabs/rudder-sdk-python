@@ -1,5 +1,4 @@
 import unittest
-from unittest import mock
 import pkgutil
 import logging
 import sys
@@ -19,22 +18,6 @@ def all():
 
 
 class TestInit(unittest.TestCase):
-    def test_module_functions_return_client_values(self):
-        client = mock.Mock()
-        analytics.default_client = client
-
-        event_methods = ('track', 'identify', 'group', 'alias', 'page',
-                         'screen')
-        for method in event_methods:
-            expected = object()
-            getattr(client, method).return_value = expected
-            self.assertIs(getattr(analytics, method)('value'), expected)
-
-        for method in ('flush', 'join'):
-            expected = object()
-            getattr(client, method).return_value = expected
-            self.assertIs(getattr(analytics, method)(), expected)
-
     def test_writeKey(self):
         self.assertIsNone(analytics.default_client)
         analytics.flush()
