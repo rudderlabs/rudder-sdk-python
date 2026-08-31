@@ -38,6 +38,10 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     }
 
     if proxies:
+        # Older SDK versions accepted a single proxy string.
+        if isinstance(proxies, str):
+            proxy_url = proxies if '://' in proxies else 'http://' + proxies
+            proxies = {'http': proxy_url, 'https': proxy_url}
         kwargs['proxies'] = proxies
 
     res = _session.post(url, **kwargs)

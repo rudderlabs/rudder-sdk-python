@@ -45,6 +45,31 @@ analytics.track('user_id', 'Simple Track Event', anonymous_id='anonymousId',
 
 For more information on the supported calls, refer to the [**documentation**](https://docs.rudderstack.com/stream-sources/rudderstack-sdk-integration-guides/rudderstack-python-sdk#sending-events-from-rudderstack).
 
+## Proxy configuration
+
+Pass `proxies` when you create a `Client`. A Requests-style mapping is preferred:
+
+```python
+from rudderstack.analytics.client import Client
+
+client = Client(
+    'SOURCE_WRITE_KEY',
+    host='https://YOUR_DATA_PLANE_URL',
+    proxies={
+        'http': 'http://proxy.example:8080',
+        'https': 'http://proxy.example:8080',
+    },
+)
+```
+
+A legacy string such as `proxy.example:8080` is also supported. The SDK applies
+the string to both HTTP and HTTPS requests. If the string has no scheme, the SDK
+adds `http://`. An existing scheme is preserved.
+
+Configured proxies are now used for event requests. Earlier versions ignored
+this option. Check that any existing proxy configuration is reachable before
+upgrading.
+
 ## About RudderStack
 
 [**RudderStack**](https://rudderstack.com/) is a customer data platform for developers. Our tooling makes it easy to deploy pipelines that collect customer data from every app, website and SaaS platform, then activate it in your warehouse and business tools.
