@@ -15,21 +15,7 @@ The repository uses release-please for versioning and GitHub releases. A separat
    python -c "from rudderstack.analytics.version import VERSION; print(VERSION)"
    ```
 
-The workflow sends the Slack release notification only after PyPI accepts the package.
-
-## Publish an existing GitHub release
-
-Use this procedure when a GitHub release exists but its package is missing from PyPI.
-
-1. Open the repository's **Actions** page.
-2. Select **Publish to PyPI**.
-3. Select **Run workflow** from `master`.
-4. Enter the existing release tag, for example `v2.1.6`.
-5. Approve the `pypi` environment deployment if GitHub requests approval.
-6. Wait for the build and publish jobs to finish.
-7. Verify the package installation.
-
-A manual run does not send a second Slack notification.
+The workflow sends the Slack release notification only after PyPI accepts the package. The workflow does not support manual publishing.
 
 ## Authentication
 
