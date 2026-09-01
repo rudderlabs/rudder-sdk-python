@@ -15,7 +15,9 @@ The repository uses release-please for versioning and GitHub releases. A separat
    python -c "from rudderstack.analytics.version import VERSION; print(VERSION)"
    ```
 
-The workflow sends the Slack release notification only after PyPI accepts the package. The workflow does not support manual publishing.
+The workflow sends the successful release notification only after PyPI accepts the package. If the build or publication fails, the workflow sends a failure notification with a link to the GitHub Actions run. PyPI rejects an upload when that version already exists, and the workflow reports that rejection as a failure.
+
+The workflow does not support manual publishing.
 
 ## Authentication
 

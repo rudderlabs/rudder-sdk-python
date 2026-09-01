@@ -86,11 +86,13 @@ jobs:
 
       - name: Publish distributions to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          skip-existing: false
 
   notify-slack:
     name: Notify Slack
-    if: github.event_name == 'release'
-    needs: publish
+    if: ${{ always() }}
+    needs: [build, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -100,7 +102,8 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Send message to Slack channel
+      - name: Send success message to Slack channel
+        if: needs.publish.result == 'success'
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -125,6 +128,37 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "*Release: <${{ github.event.release.html_url }}|${{ github.event.release.tag_name }}>*\n*PyPI: <https://pypi.org/project/rudder-sdk-python/|rudder-sdk-python on PyPI>*"
+                  }
+                }
+              ]
+            }
+
+      - name: Send failure message to Slack channel
+        if: needs.publish.result != 'success'
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PROJECT_NAME: Python SDK
+        with:
+          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Release failed: ${{ env.PROJECT_NAME }}"
+                  }
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release: <${{ github.event.release.html_url }}|${{ github.event.release.tag_name }}>*\n*Build:* `${{ needs.build.result }}`\n*Publish:* `${{ needs.publish.result }}`\n*Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>*"
                   }
                 }
               ]
