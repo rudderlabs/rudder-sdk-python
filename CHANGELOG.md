@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.8](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.7...v2.1.8) (2026-09-01)
+
+
+### Bug Fixes
+
+* sdk-5389 validate release version safely ([#130](https://github.com/rudderlabs/rudder-sdk-python/issues/130)) ([0e438b4](https://github.com/rudderlabs/rudder-sdk-python/commit/0e438b434000e887d3bed6540efb67c95e0102af))
+
 ## [2.1.7](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.6...v2.1.7) (2026-09-01)
 
 
