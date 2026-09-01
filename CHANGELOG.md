@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.7](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.6...v2.1.7) (2026-09-01)
+
+
+### Bug Fixes
+
+* sdk-5389 automate python sdk pypi publishing ([#127](https://github.com/rudderlabs/rudder-sdk-python/issues/127)) ([e3a7cf8](https://github.com/rudderlabs/rudder-sdk-python/commit/e3a7cf8f59bc716b894c8b80fc271469f3b12a50))
+
 ## [2.1.6](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.5...v2.1.6) (2026-09-01)
 
 
