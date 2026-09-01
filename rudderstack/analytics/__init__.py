@@ -90,8 +90,7 @@ def join():
 
 def shutdown():
     """Flush all messages and cleanly shutdown the client"""
-    _proxy('flush')
-    _proxy('join')
+    _proxy('shutdown')
 
 
 def _proxy(method, *args, **kwargs):

@@ -1,1 +1,4 @@
-TEST_PROXY = '203.243.63.16:80'
+TEST_PROXY = {
+    'http': 'http://proxy.example:8080',
+    'https': 'http://proxy.example:8080',
+}

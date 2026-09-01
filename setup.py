@@ -10,7 +10,6 @@ long_description = (Path(__file__).resolve().parent / 'README.md').read_text(enc
 
 install_requires = [
     "requests>=2.32.3,<3.0",
-    "monotonic>=1.6,<2.0",
     "backoff>=2.2.1,<3.0",
     "python-dateutil>=2.2,<3.0",
     "python-dotenv>=1.0.1,<2.0.0",

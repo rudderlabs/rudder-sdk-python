@@ -41,6 +41,12 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+      - name: Test compatibility without credentials
+        run: |
+          python -m pytest -q \
+            rudderstack/analytics/test/test_public_api_contract.py \
+            rudderstack/analytics/test/test_request_options.py
+
       - name: Test
         run: |
           python -m pytest
