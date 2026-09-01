@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.6](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.5...v2.1.6) (2026-09-01)
+
+
+### Bug Fixes
+
+* sdk-5295 preserve proxy and public api compatibility ([a700837](https://github.com/rudderlabs/rudder-sdk-python/commit/a700837775955a0700d28ace5784e3118b35dc1d))
+
+
+### Miscellaneous
+
+* add new branding images to readme ([#124](https://github.com/rudderlabs/rudder-sdk-python/issues/124)) ([0490ef4](https://github.com/rudderlabs/rudder-sdk-python/commit/0490ef4efa82848e9f0432e6e991d3ba81c21bec))
+* **codeowners:** set sdk_team as code owners ([#114](https://github.com/rudderlabs/rudder-sdk-python/issues/114)) ([7bab8aa](https://github.com/rudderlabs/rudder-sdk-python/commit/7bab8aa77da97447d532283d6259c6097a0d758f))
+
 ## [2.1.5](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.4...v2.1.5) (2026-07-06)
 
 
