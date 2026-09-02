@@ -1,23 +1,34 @@
 from datetime import date, datetime
 import unittest
-import time
 from unittest import mock
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
-from version import VERSION
-from client import Client
-from get_env import TEST_WRITE_KEY
+from rudderstack.analytics.version import VERSION
+from rudderstack.analytics.client import Client
+from rudderstack.analytics.request import APIError
+
+
+TEST_WRITE_KEY = 'test-write-key'
+
 
 class TestClient(unittest.TestCase):
 
-    
     def fail(self, e, batch):
         """Mark the failure handler"""
         self.failed = True
 
     def setUp(self):
         self.failed = False
-        self.client = Client(TEST_WRITE_KEY, on_error=self.fail)
+        post_patcher = mock.patch('rudderstack.analytics.consumer.post')
+        self.consumer_post = post_patcher.start()
+        self.addCleanup(post_patcher.stop)
+        self.client = self.make_client(on_error=self.fail)
+
+    def make_client(self, write_key=TEST_WRITE_KEY, **kwargs):
+        client = Client(write_key, **kwargs)
+        if client.consumers is not None:
+            self.addCleanup(client.shutdown)
+        return client
 
     def test_requires_write_key(self):
         self.assertRaises(AssertionError, Client)
@@ -263,7 +274,9 @@ class TestClient(unittest.TestCase):
     def test_synchronous(self):
         client = Client(TEST_WRITE_KEY, sync_mode=True)
 
-        success, _ = client.identify('userId')
+        with mock.patch('rudderstack.analytics.client.post') as post:
+            success, _ = client.identify('userId')
+        post.assert_called_once()
         self.assertFalse(client.consumers)
         self.assertTrue(client.queue.empty())
         self.assertTrue(success)
@@ -273,21 +286,28 @@ class TestClient(unittest.TestCase):
         # Ensure consumer thread is no longer uploading
         client.join()
 
-        for _ in range(10):
-            client.identify('userId')
+        try:
+            for _ in range(10):
+                client.identify('userId')
 
-        success, _ = client.identify('userId')
-        # Make sure we are informed that the queue is at capacity
-        self.assertFalse(success)
+            success, _ = client.identify('userId')
+            # Make sure we are informed that the queue is at capacity
+            self.assertFalse(success)
+        finally:
+            while not client.queue.empty():
+                client.queue.get_nowait()
+                client.queue.task_done()
 
     def test_failure_on_invalid_write_key(self):
-        client = Client('bad_key', on_error=self.fail)
+        self.consumer_post.side_effect = APIError(
+            401, 'invalid_write_key', 'Invalid write key')
+        client = self.make_client('bad_key', on_error=self.fail)
         client.track('userId', 'event')
         client.flush()
         self.assertTrue(self.failed)
 
     def test_unicode(self):
-        Client('unicode_key')
+        self.make_client('unicode_key', send=False)
 
     def test_numeric_user_id(self):
         self.client.track(1234, 'python event')
@@ -295,7 +315,7 @@ class TestClient(unittest.TestCase):
         self.assertFalse(self.failed)
 
     def test_debug(self):
-        Client('bad_key', debug=True)
+        self.make_client('bad_key', debug=True, send=False)
 
     def test_identify_with_date_object(self):
         client = self.client
@@ -312,25 +332,25 @@ class TestClient(unittest.TestCase):
         self.assertEqual(msg['context']['traits'], {'birthdate': date(1981, 2, 2)})
 
     def assert_gzip_enabled_by_default(self):
-         client = Client(TEST_WRITE_KEY, on_error=self.fail)
-         self.assertTrue(client.gzip)
+        client = self.make_client(on_error=self.fail, send=False)
+        self.assertTrue(client.gzip)
 
     def test_gzip(self):
-        client = Client(TEST_WRITE_KEY, on_error=self.fail, gzip=True)
+        client = self.make_client(on_error=self.fail, gzip=True)
         for _ in range(10):
             client.identify('userId', {'trait': 'value'})
         client.flush()
         self.assertFalse(self.failed)
 
-
     def test_user_defined_upload_size(self):
-        client = Client(write_key = TEST_WRITE_KEY, on_error=self.fail,
-                        upload_size=10, upload_interval=0.01)
+        client = self.make_client(
+            on_error=self.fail, upload_size=10, upload_interval=0.01)
         consumer = client.consumers[0]
         consumer.pause()
         consumer.join()
 
         batch_sizes = []
+
         def mock_post_fn(*args, **kwargs):
             batch_sizes.append(len(kwargs['batch']))
 
@@ -346,16 +366,16 @@ class TestClient(unittest.TestCase):
             self.assertEqual(batch_sizes, [10, 10])
 
     def test_user_defined_timeout(self):
-        client = Client(TEST_WRITE_KEY, timeout=10)
+        client = self.make_client(timeout=10, send=False)
         for consumer in client.consumers:
             self.assertEqual(consumer.timeout, 10)
 
     def test_default_timeout_15(self):
-        client = Client(TEST_WRITE_KEY)
+        client = self.make_client(send=False)
         for consumer in client.consumers:
             self.assertEqual(consumer.timeout, 15)
 
     def test_proxies(self):
-        client = Client(TEST_WRITE_KEY, proxies=TEST_PROXY, send=False)
+        client = self.make_client(proxies=TEST_PROXY, send=False)
 
         self.assertEqual(client.consumers[0].proxies, TEST_PROXY)
