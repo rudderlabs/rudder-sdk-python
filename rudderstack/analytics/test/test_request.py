@@ -4,7 +4,8 @@ from unittest import mock
 import json
 import requests
 
-from rudderstack.analytics.request import _gzip_json, post, DatetimeSerializer
+from rudderstack.analytics.request import (
+    APIError, DatetimeSerializer, _gzip_json, post)
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 
@@ -24,6 +25,35 @@ class TestRequests(unittest.TestCase):
             'type': 'track'
         }])
         self.assertEqual(res.status_code, 200)
+
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_json_error_response(self, session_post):
+        response = mock.Mock(status_code=401)
+        response.json.return_value = {
+            'code': 'invalid_write_key',
+            'message': 'Invalid write key',
+        }
+        session_post.return_value = response
+
+        with self.assertRaises(APIError) as raised:
+            post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+
+        self.assertEqual(raised.exception.status, 401)
+        self.assertEqual(raised.exception.code, 'invalid_write_key')
+        self.assertEqual(raised.exception.message, 'Invalid write key')
+
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_non_json_error_response(self, session_post):
+        response = mock.Mock(status_code=502, text='Bad gateway')
+        response.json.side_effect = ValueError('invalid JSON')
+        session_post.return_value = response
+
+        with self.assertRaises(APIError) as raised:
+            post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+
+        self.assertEqual(raised.exception.status, 502)
+        self.assertEqual(raised.exception.code, 'unknown')
+        self.assertEqual(raised.exception.message, 'Bad gateway')
 
     @mock.patch('rudderstack.analytics.request._session.post')
     def test_request_error_is_propagated(self, session_post):
