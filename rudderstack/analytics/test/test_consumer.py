@@ -12,7 +12,10 @@ except ImportError:
 
 from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
 from rudderstack.analytics.request import APIError
-from rudderstack.analytics.get_env import TEST_WRITE_KEY, TEST_DATA_PLANE_URL
+
+
+TEST_WRITE_KEY = 'test-write-key'
+TEST_DATA_PLANE_URL = 'https://example.test'
 
 
 class TestConsumer(unittest.TestCase):
@@ -42,10 +45,11 @@ class TestConsumer(unittest.TestCase):
         self.assertEqual(next, [])
         self.assertTrue(q.empty())
 
-    def test_upload(self):
+    @mock.patch('rudderstack.analytics.consumer.post')
+    def test_upload(self, post):
         q = Queue()
-        consumer = Consumer(q, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_WRITE_KEY)
+        consumer = Consumer(q, host=TEST_DATA_PLANE_URL,
+                            write_key=TEST_WRITE_KEY)
         track = {
             'type': 'track',
             'event': 'python event',
@@ -54,6 +58,7 @@ class TestConsumer(unittest.TestCase):
         q.put(track)
         success = consumer.upload()
         self.assertTrue(success)
+        post.assert_called_once()
 
     def test_upload_interval(self):
         # Put _n_ items in the queue, pausing a little bit more than
@@ -98,17 +103,17 @@ class TestConsumer(unittest.TestCase):
             time.sleep(upload_interval * 1.1)
             self.assertEqual(mock_post.call_count, 2)
 
-
-    @classmethod
-    def test_request(cls):
-        consumer = Consumer(None, host=TEST_DATA_PLANE_URL, 
-        write_key=TEST_WRITE_KEY)
+    @mock.patch('rudderstack.analytics.consumer.post')
+    def test_request(self, post):
+        consumer = Consumer(None, host=TEST_DATA_PLANE_URL,
+                            write_key=TEST_WRITE_KEY)
         track = {
             'type': 'track',
             'event': 'python event',
             'userId': 'userId'
         }
         consumer.request([track])
+        post.assert_called_once()
 
     def _test_request_retry(self, consumer,
                             expected_exception, exception_count):
