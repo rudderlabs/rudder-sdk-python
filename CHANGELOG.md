@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.9](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.8...v2.1.9) (2026-09-03)
+
+
+### Miscellaneous
+
+* apply security best practices from step security ([#132](https://github.com/rudderlabs/rudder-sdk-python/issues/132)) ([3fd5869](https://github.com/rudderlabs/rudder-sdk-python/commit/3fd58694378c637f0f40e52c16f50bd38374a8cf))
+* sdk-5412 make pr tests network-free ([#133](https://github.com/rudderlabs/rudder-sdk-python/issues/133)) ([d2deb2c](https://github.com/rudderlabs/rudder-sdk-python/commit/d2deb2c6f7ff0711f2536870b8a0857a6608883c))
+
 ## [2.1.8](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.7...v2.1.8) (2026-09-01)
 
 
