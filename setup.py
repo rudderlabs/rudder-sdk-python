@@ -1,10 +1,11 @@
-import sys
+import runpy
 from setuptools import setup
 from pathlib import Path
 
-# Don't import rudder_analytics module here, since deps may not be installed
-sys.path.insert(0, str(Path(__file__).resolve().parent / 'rudderstack' / 'analytics'))
-from rudderstack.analytics.version import VERSION
+# Read the version without importing SDK dependencies during isolated builds.
+VERSION = runpy.run_path(
+    str(Path(__file__).resolve().parent / 'rudderstack' / 'analytics' / 'version.py')
+)['VERSION']
 
 long_description = (Path(__file__).resolve().parent / 'README.md').read_text(encoding='utf-8')
 
