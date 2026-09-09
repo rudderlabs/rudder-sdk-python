@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.9](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.8...v2.1.9) (2026-09-08)
+
+
+### Bug Fixes
+
+* sdk-5444 support isolated source builds ([#145](https://github.com/rudderlabs/rudder-sdk-python/issues/145)) ([90d2923](https://github.com/rudderlabs/rudder-sdk-python/commit/90d292304cf56a0290bedc4bb0919712beba79f8))
+
+
+### Miscellaneous
+
+* apply security best practices from step security ([#132](https://github.com/rudderlabs/rudder-sdk-python/issues/132)) ([3fd5869](https://github.com/rudderlabs/rudder-sdk-python/commit/3fd58694378c637f0f40e52c16f50bd38374a8cf))
+* **deps:** bump actions/download-artifact from 4.3.0 to 8.0.1 ([#136](https://github.com/rudderlabs/rudder-sdk-python/issues/136)) ([a9dafb5](https://github.com/rudderlabs/rudder-sdk-python/commit/a9dafb558a90d3019ccab5ae0e2a2d0baeb2eb79))
+* **deps:** bump actions/stale from 9.1.0 to 11.0.0 ([#121](https://github.com/rudderlabs/rudder-sdk-python/issues/121)) ([954ef33](https://github.com/rudderlabs/rudder-sdk-python/commit/954ef33c8c188804d6d2ede9232d25e7eb7c6ba1))
+* **deps:** bump actions/upload-artifact from 4.6.2 to 7.0.1 ([#139](https://github.com/rudderlabs/rudder-sdk-python/issues/139)) ([d6db349](https://github.com/rudderlabs/rudder-sdk-python/commit/d6db34909a1482d72a4013829c46d53ea5edec69))
+* **deps:** bump pytest from 8.3.3 to 8.3.5 ([#144](https://github.com/rudderlabs/rudder-sdk-python/issues/144)) ([33bba2a](https://github.com/rudderlabs/rudder-sdk-python/commit/33bba2af2474fb40e2a34ee6b8ddd899b110c5b9))
+* **deps:** bump rudderlabs/github-action-check-pr-title from 1.0.11 to 1.0.12 ([#138](https://github.com/rudderlabs/rudder-sdk-python/issues/138)) ([ba06a2f](https://github.com/rudderlabs/rudder-sdk-python/commit/ba06a2fb6d43508d360ce4ff4a2541cb31e12335))
+* **deps:** bump step-security/harden-runner from 2.16.0 to 2.21.1 ([#137](https://github.com/rudderlabs/rudder-sdk-python/issues/137)) ([4a0c2ba](https://github.com/rudderlabs/rudder-sdk-python/commit/4a0c2ba7eccad5ce9adb3e2d6e4e12942f85287e))
+* **deps:** sdk-5393 update compatible security dependencies ([#140](https://github.com/rudderlabs/rudder-sdk-python/issues/140)) ([e9e92be](https://github.com/rudderlabs/rudder-sdk-python/commit/e9e92be39f3071dcc68dded5dd2ff711c5a554d0))
+* sdk-5412 make pr tests network-free ([#133](https://github.com/rudderlabs/rudder-sdk-python/issues/133)) ([d2deb2c](https://github.com/rudderlabs/rudder-sdk-python/commit/d2deb2c6f7ff0711f2536870b8a0857a6608883c))
+* validate workflows and package artifacts ([#135](https://github.com/rudderlabs/rudder-sdk-python/issues/135)) ([cd77a56](https://github.com/rudderlabs/rudder-sdk-python/commit/cd77a565b843a395d7b1ae3b7905128386f1161e))
+
 ## [2.1.8](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.7...v2.1.8) (2026-09-01)
 
 
