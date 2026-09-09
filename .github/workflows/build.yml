@@ -61,7 +61,7 @@ jobs:
           persist-credentials: false
 
       - name: Validate workflows and embedded shell
-        uses: reviewdog/action-actionlint@83e4ed25b168066ad8f62f5afbb29ebd8641d982 # v1.69.1
+        uses: reviewdog/action-actionlint@d290e336d5a743810aef4404f757dc862276d2ae # v1.73.4
         with:
           reporter: local
           filter_mode: nofilter
