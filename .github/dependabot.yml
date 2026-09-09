@@ -3,10 +3,19 @@ updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: weekly
+      # Routine updates only; security updates are advisory-driven.
+      interval: quarterly
     open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - python
+      - dependabot
 
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
+    labels:
+      - dependencies
+      - github_actions
+      - dependabot
