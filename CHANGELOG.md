@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.10](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.9...v2.1.10) (2026-09-11)
+
+
+### Miscellaneous
+
+* preserve dependabot prs and schedule quarterly pip updates ([#146](https://github.com/rudderlabs/rudder-sdk-python/issues/146)) ([c1bcd67](https://github.com/rudderlabs/rudder-sdk-python/commit/c1bcd67b15c329a24747b636f9b45712e71b14aa))
+* switch branding images to CDN URLs ([#149](https://github.com/rudderlabs/rudder-sdk-python/issues/149)) ([536022e](https://github.com/rudderlabs/rudder-sdk-python/commit/536022e25991a3fea4b3b93299078470bc935c1a))
+
 ## [2.1.9](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.8...v2.1.9) (2026-09-08)
 
 
