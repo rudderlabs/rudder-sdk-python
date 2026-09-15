@@ -19,6 +19,25 @@ The workflow sends the successful release notification only after PyPI accepts t
 
 The workflow does not support manual publishing.
 
+## Startup failures
+
+`Notify release startup failure` independently handles the initial publishing
+attempt when GitHub rejects the workflow before creating any jobs. Both workflows
+start from `release: published`. The monitor queries the Actions API for up to
+two minutes and sends a Slack alert only for `startup_failure` with zero jobs.
+Ordinary job outcomes continue to use the publishing workflow's notification.
+
+The monitor deliberately skips reruns to avoid repeating the initial alert. It
+also skips a publishing run that has already been retried. Inspect the failed
+workflow and correct the reported configuration or action-policy error before
+retrying publishing. A monitor failure, missing run, or API error is visible in
+Actions but is not reported as a publishing startup failure in Slack.
+
+This covers releases whose tag includes the monitor. It does not cover disabled
+Actions, a rejected monitor, missing release events, or startup failures on later
+publishing attempts. See [the validation record](docs/release-startup-validation.md)
+for the controlled proof and detection limits.
+
 ## Authentication
 
 PyPI uses a trusted publisher for this repository. GitHub obtains a short-lived OpenID Connect token for each publishing job. The repository does not store a PyPI password or API token.
