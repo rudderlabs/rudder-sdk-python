@@ -10,7 +10,7 @@ permissions:
 jobs:
   prs:
     name: Clean up stale PRs
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: arc-amd64
 
     permissions:
       issues: write
@@ -35,7 +35,7 @@ jobs:
 
   branches:
     name: Clean up stale branches
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: arc-amd64
     permissions:
       contents: write
     steps:
