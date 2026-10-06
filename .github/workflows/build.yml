@@ -78,6 +78,9 @@ jobs:
         with:
           python-version-file: .python-version
 
+      - name: Test release startup detection
+        run: python -m unittest discover -s .github/scripts -p 'test_*.py'
+
       - name: Install build tools and package dependencies
         run: ./setup_env.sh
 
