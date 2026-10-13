@@ -1,11 +1,12 @@
 from datetime import datetime, date
+import base64
 import unittest
 from unittest import mock
 import json
 import requests
 
 from rudderstack.analytics.request import (
-    APIError, DatetimeSerializer, _gzip_json, post)
+    APIError, DatetimeSerializer, UploadError, _gzip_json, post)
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 
@@ -56,21 +57,92 @@ class TestRequests(unittest.TestCase):
         self.assertEqual(raised.exception.message, 'Bad gateway')
 
     @mock.patch('rudderstack.analytics.request._session.post')
-    def test_request_error_is_propagated(self, session_post):
-        session_post.side_effect = requests.RequestException('request failed')
+    def test_request_error_is_sanitized(self, session_post):
+        write_key = 'rk_live_SECRET_SHOULD_NOT_APPEAR'
+        request = requests.Request('POST', TEST_DATA_PLANE_URL).prepare()
+        request.headers['Authorization'] = 'Basic encoded-secret'
+        session_post.side_effect = requests.ConnectionError(
+            'failed with {0}; Authorization: Basic encoded-secret'.format(
+                write_key),
+            request=request)
 
-        with self.assertRaisesRegex(requests.RequestException,
-                                    'request failed'):
-            post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+        with self.assertRaises(UploadError) as raised:
+            post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+
+        error = raised.exception
+        self.assertEqual(str(error),
+                         '[rudderstack] upload failed (ConnectionError)')
+        self.assertNotIn(write_key, str(error))
+        self.assertNotIn(write_key, repr(error))
+        self.assertNotIn('Authorization', str(error))
+        self.assertFalse(hasattr(error, 'request'))
+        self.assertFalse(hasattr(error, 'response'))
 
     @mock.patch('rudderstack.analytics.request._session.post')
-    def test_connection_error_is_propagated(self, session_post):
-        session_post.side_effect = requests.ConnectionError(
-            'host unavailable')
+    def test_timeout_and_proxy_errors_are_sanitized(self, session_post):
+        write_key = 'rk_live_SECRET_SHOULD_NOT_APPEAR'
+        for error_type in (requests.ReadTimeout,
+                           requests.exceptions.ProxyError):
+            with self.subTest(error_type=error_type):
+                session_post.side_effect = error_type(
+                    'Authorization: Bearer {0}'.format(write_key))
+                with self.assertRaises(UploadError) as raised:
+                    post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+                self.assertNotIn(write_key, str(raised.exception))
+                self.assertNotIn('Authorization', str(raised.exception))
+                self.assertIn(error_type.__name__, str(raised.exception))
 
-        with self.assertRaisesRegex(requests.ConnectionError,
-                                    'host unavailable'):
-            post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_error_response_redacts_credentials(self, session_post):
+        write_key = 'rk_live_SECRET_SHOULD_NOT_APPEAR'
+        encoded_key = base64.b64encode(
+            ('{0}:'.format(write_key)).encode('utf-8')).decode('ascii')
+        response = mock.Mock(status_code=401)
+        response.json.return_value = {
+            'code': 'invalid_write_key',
+            'message': 'Authorization: Basic encoded {0}'.format(write_key),
+        }
+        session_post.return_value = response
+
+        with self.assertRaises(APIError) as raised:
+            post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+
+        self.assertNotIn(write_key, str(raised.exception))
+        self.assertNotIn(write_key, repr(raised.exception))
+        self.assertNotIn('encoded', str(raised.exception))
+
+        for echoed_headers in (
+                "{'Authorization': 'Basic dict-secret'}",
+                '{"Authorization":"Basic json-secret"}',
+                'base64 credential {0}'.format(encoded_key)):
+            with self.subTest(echoed_headers=echoed_headers):
+                response.json.return_value = {
+                    'code': 'invalid_write_key',
+                    'message': echoed_headers,
+                }
+                with self.assertRaises(APIError) as raised:
+                    post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+                exposed = str(raised.exception) + repr(raised.exception)
+                self.assertNotIn('dict-secret', exposed)
+                self.assertNotIn('json-secret', exposed)
+                self.assertNotIn(encoded_key, exposed)
+                self.assertIn('[REDACTED]', exposed)
+
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_malformed_json_error_response_raises_api_error(self, session_post):
+        for payload in ({'error': 'upstream failed'}, {'unexpected': 'shape'},
+                        ['bad', 'gateway']):
+            with self.subTest(payload=payload):
+                response = mock.Mock(status_code=502, text='Bad gateway')
+                response.json.return_value = payload
+                session_post.return_value = response
+
+                with self.assertRaises(APIError) as raised:
+                    post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+
+                self.assertEqual(raised.exception.status, 502)
+                self.assertEqual(raised.exception.code, 'unknown')
+                self.assertIsInstance(raised.exception.message, str)
 
     def test_datetime_serialization(self):
         data = {'created': datetime(2012, 3, 4, 5, 6, 7, 891011)}
@@ -100,7 +172,7 @@ class TestRequests(unittest.TestCase):
     def test_should_timeout(self, session_post):
         session_post.side_effect = requests.ReadTimeout('request timed out')
 
-        with self.assertRaises(requests.ReadTimeout):
+        with self.assertRaises(UploadError):
             post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[{
                 'userId': 'userId',
                 'event': 'python event',

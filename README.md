@@ -79,6 +79,37 @@ Configured proxies are now used for event requests. Earlier versions ignored
 this option. Check that any existing proxy configuration is reachable before
 upgrading.
 
+## Short-lived and serverless runtimes
+
+Delivery is asynchronous by default. Configure `on_error` and call `flush()`
+before a serverless handler or other short-lived process returns. Call
+`shutdown()` instead when the client will not be used again; it flushes pending
+events and stops the delivery thread. Failed uploads are passed to `on_error`
+and logged without request credentials or Authorization data.
+
+`flush()` waits for configured retries and request timeouts to finish, so choose
+`timeout` and `max_retries` that fit the runtime's execution limit. In
+`sync_mode=True`, event methods preserve synchronous semantics and raise a safe
+upload exception to the caller instead of invoking `on_error`.
+
+```python
+from rudderstack.analytics.client import Client
+
+client = Client(
+    'SOURCE_WRITE_KEY',
+    host='https://YOUR_DATA_PLANE_URL',
+    on_error=lambda error, batch: print(
+        f'Could not deliver {len(batch)} event(s): {error}'),
+    timeout=2,
+    max_retries=1,
+)
+
+try:
+    client.track('user-id', 'AI Interaction Completed')
+finally:
+    client.shutdown()
+```
+
 ## About RudderStack
 
 [**RudderStack**](https://rudderstack.com/) is a customer data platform for developers. Our tooling makes it easy to deploy pipelines that collect customer data from every app, website and SaaS platform, then activate it in your warehouse and business tools.

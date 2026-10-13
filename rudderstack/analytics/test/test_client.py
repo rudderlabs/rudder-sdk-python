@@ -5,7 +5,7 @@ from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 from rudderstack.analytics.version import VERSION
 from rudderstack.analytics.client import Client
-from rudderstack.analytics.request import APIError
+from rudderstack.analytics.request import APIError, UploadError
 
 
 TEST_WRITE_KEY = 'test-write-key'
@@ -258,6 +258,17 @@ class TestClient(unittest.TestCase):
         # Make sure that the client queue is empty after flushing
         self.assertTrue(client.queue.empty())
 
+    def test_multiple_consumers_are_retained_and_shutdown(self):
+        client = self.make_client(thread=2)
+        self.assertEqual(len(client.consumers), 2)
+        self.assertTrue(all(consumer.is_alive()
+                            for consumer in client.consumers))
+
+        client.shutdown()
+
+        self.assertTrue(all(not consumer.is_alive()
+                            for consumer in client.consumers))
+
     def test_shutdown(self):
         client = self.client
         # set up the consumer with more requests than a single batch will allow
@@ -280,6 +291,23 @@ class TestClient(unittest.TestCase):
         self.assertFalse(client.consumers)
         self.assertTrue(client.queue.empty())
         self.assertTrue(success)
+
+    def test_sync_upload_failure_is_safe_and_propagated(self):
+        write_key = 'rk_live_SECRET_SHOULD_NOT_APPEAR'
+        client = Client(write_key, sync_mode=True)
+
+        with mock.patch(
+                'rudderstack.analytics.client.post',
+                side_effect=UploadError('ConnectionError')):
+            with self.assertRaises(UploadError) as raised:
+                client.track('userId', 'event')
+
+        self.assertNotIn(write_key, str(raised.exception))
+        self.assertNotIn(write_key, repr(raised.exception))
+
+    def test_sync_shutdown_is_safe(self):
+        client = Client(TEST_WRITE_KEY, sync_mode=True)
+        self.assertIsNone(client.shutdown())
 
     def test_overflow(self):
         client = Client(TEST_WRITE_KEY, max_queue_size=1)

@@ -79,8 +79,8 @@ class Client(object):
             # to call flush().
             if send:
                 atexit.register(self.join)
+            self.consumers = []
             for _ in range(thread):
-                self.consumers = []
                 consumer = Consumer(
                     self.queue, write_key, host=host, on_error=on_error,
                     upload_size=upload_size, upload_interval=upload_interval,
@@ -309,7 +309,7 @@ class Client(object):
         """Ends the consumer thread once the queue is empty.
         Blocks execution until finished
         """
-        for consumer in self.consumers:
+        for consumer in self.consumers or []:
             consumer.pause()
             try:
                 consumer.join()
