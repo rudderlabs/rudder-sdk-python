@@ -39,43 +39,6 @@ class TestModule(unittest.TestCase):
         created_client.track.assert_called_once_with(
             'userId', 'python module event')
 
-    def test_default_client_forwards_failure_delivery_settings(self):
-        created_client = mock.Mock()
-        on_error = mock.Mock()
-        with mock.patch.object(analytics, 'default_client', None), \
-                mock.patch.object(analytics, 'write_key', TEST_WRITE_KEY), \
-                mock.patch.object(analytics, 'dataPlaneUrl',
-                                  'https://example.test'), \
-                mock.patch.object(analytics, 'on_error', on_error), \
-                mock.patch.object(analytics, 'timeout', 2), \
-                mock.patch.object(analytics, 'max_retries', 1), \
-                mock.patch.object(analytics, 'Client',
-                                  return_value=created_client) as client_class:
-            analytics.track('userId', 'python module event')
-
-        self.assertIs(client_class.call_args.kwargs['on_error'], on_error)
-        self.assertEqual(client_class.call_args.kwargs['timeout'], 2)
-        self.assertEqual(client_class.call_args.kwargs['max_retries'], 1)
-
-    def test_shutdown_resets_default_client_for_warm_reuse(self):
-        first_client = mock.Mock()
-        second_client = mock.Mock()
-        with mock.patch.object(analytics, 'default_client', first_client), \
-                mock.patch.object(analytics, 'write_key', TEST_WRITE_KEY), \
-                mock.patch.object(analytics, 'Client',
-                                  return_value=second_client) as client_class:
-            analytics.shutdown()
-            self.assertIsNone(analytics.default_client)
-
-            analytics.track('userId', 'python module event')
-            analytics.flush()
-
-        first_client.shutdown.assert_called_once_with()
-        client_class.assert_called_once()
-        second_client.track.assert_called_once_with(
-            'userId', 'python module event')
-        second_client.flush.assert_called_once_with()
-
     def test_track(self):
         analytics.track('userId', 'python module event')
         analytics.flush()

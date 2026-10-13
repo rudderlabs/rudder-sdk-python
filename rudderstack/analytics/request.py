@@ -19,10 +19,8 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     """Post the `kwargs` to the API"""
     log = logging.getLogger('rudderstack')
     body = kwargs
-    body["sentAt"] = datetime.now(timezone.utc).replace(
-        tzinfo=tzutc()).isoformat()
-    url = (remove_trailing_slash(host or 'https://api.rudderstack.com') +
-           '/v1/batch')
+    body["sentAt"] = datetime.now(timezone.utc).replace(tzinfo=tzutc()).isoformat()
+    url = remove_trailing_slash(host or 'https://api.rudderstack.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
     log.debug('making request: %s', data)
@@ -48,10 +46,15 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
             proxies = {'http': proxy_url, 'https': proxy_url}
         kwargs['proxies'] = proxies
 
+    safe_error = None
     try:
         res = _session.post(url, **kwargs)
     except RequestException as error:
-        raise sanitize_exception(error) from None
+        safe_error = _redact_request_exception(error, write_key)
+    # Raised outside the handler so the original error, whose request holds
+    # the Authorization header, is not kept as __context__.
+    if safe_error is not None:
+        raise safe_error
 
     if res.status_code == 200:
         log.debug('data uploaded successfully')
@@ -59,26 +62,13 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
 
     try:
         payload = res.json()
-        log.debug('received error response with status %s', res.status_code)
+        log.debug('received response: %s',
+                  _sanitize_text(str(payload), write_key))
+        raise APIError(res.status_code, payload['code'],
+                       _sanitize_text(payload['message'], write_key))
     except ValueError:
-        code = 'unknown'
-        message = res.text
-    else:
-        code = 'unknown'
-        message = payload
-        if isinstance(payload, dict):
-            code = payload.get('code') or 'unknown'
-            message = payload.get('message')
-            if message is None:
-                message = payload.get('error')
-            if message is None:
-                message = getattr(res, 'text', payload)
-
-    raise APIError(
-        res.status_code,
-        _sanitize_text(code, write_key),
-        _sanitize_text(message, write_key))
-
+        raise APIError(res.status_code, 'unknown',
+                       _sanitize_text(res.text, write_key))
 
 def _gzip_json(data):
     buf = BytesIO()
@@ -89,13 +79,15 @@ def _gzip_json(data):
     return buf.getvalue()
 
 
-def _sanitize_text(value, write_key=None):
-    text = str(value)
+def _sanitize_text(text, write_key):
+    """Redact the write key, its Basic auth form and Authorization values."""
+    if not isinstance(text, str):
+        return text
     if write_key:
-        text = text.replace(write_key, '[REDACTED]')
         encoded_key = base64.b64encode(
-            ('{0}:'.format(write_key)).encode('utf-8')).decode('ascii')
+            '{0}:'.format(write_key).encode('utf-8')).decode('ascii')
         text = text.replace(encoded_key, '[REDACTED]')
+        text = text.replace(write_key, '[REDACTED]')
     return re.sub(
         r'''(?ix)(
             ["']?authorization["']?\s*[:=]\s*
@@ -106,27 +98,13 @@ def _sanitize_text(value, write_key=None):
         text)
 
 
-def sanitize_exception(error, write_key=None):
-    """Return an exception safe to expose through logs or callbacks."""
-    if isinstance(error, UploadError):
-        return UploadError(_sanitize_text(error.reason, write_key))
-    if isinstance(error, APIError):
-        return APIError(
-            error.status,
-            _sanitize_text(error.code, write_key),
-            _sanitize_text(error.message, write_key))
-    return UploadError(type(error).__name__)
-
-
-class UploadError(Exception):
-    """Credential-free error raised when an upload cannot finish."""
-
-    def __init__(self, reason):
-        self.reason = reason
-
-    def __str__(self):
-        return '[rudderstack] upload failed ({0})'.format(self.reason)
-
+def _redact_request_exception(error, write_key):
+    """Return the same requests exception type without request/response."""
+    message = _sanitize_text(str(error), write_key)
+    try:
+        return type(error)(message)
+    except Exception:
+        return RequestException(message)
 
 class APIError(Exception):
 

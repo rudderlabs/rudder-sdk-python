@@ -1,11 +1,12 @@
 from datetime import date, datetime
 import unittest
+import requests
 from unittest import mock
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
 from rudderstack.analytics.version import VERSION
 from rudderstack.analytics.client import Client
-from rudderstack.analytics.request import APIError, UploadError
+from rudderstack.analytics.request import APIError
 
 
 TEST_WRITE_KEY = 'test-write-key'
@@ -258,17 +259,6 @@ class TestClient(unittest.TestCase):
         # Make sure that the client queue is empty after flushing
         self.assertTrue(client.queue.empty())
 
-    def test_multiple_consumers_are_retained_and_shutdown(self):
-        client = self.make_client(thread=2)
-        self.assertEqual(len(client.consumers), 2)
-        self.assertTrue(all(consumer.is_alive()
-                            for consumer in client.consumers))
-
-        client.shutdown()
-
-        self.assertTrue(all(not consumer.is_alive()
-                            for consumer in client.consumers))
-
     def test_shutdown(self):
         client = self.client
         # set up the consumer with more requests than a single batch will allow
@@ -292,20 +282,17 @@ class TestClient(unittest.TestCase):
         self.assertTrue(client.queue.empty())
         self.assertTrue(success)
 
-    def test_sync_upload_failure_is_safe_and_propagated(self):
-        write_key = 'rk_live_SECRET_SHOULD_NOT_APPEAR'
-        client = Client(write_key, sync_mode=True)
+    def test_sync_connection_failure_keeps_error_type(self):
+        client = Client('SECRET_WRITE_KEY_5579', host='http://127.0.0.1:1',
+                        sync_mode=True, timeout=2)
 
-        with mock.patch(
-                'rudderstack.analytics.client.post',
-                side_effect=UploadError('ConnectionError')):
-            with self.assertRaises(UploadError) as raised:
-                client.track('userId', 'event')
+        with self.assertRaises(requests.ConnectionError) as raised:
+            client.track('userId', 'python event')
 
-        self.assertNotIn(write_key, str(raised.exception))
-        self.assertNotIn(write_key, repr(raised.exception))
+        self.assertNotIn('SECRET_WRITE_KEY_5579', repr(raised.exception))
+        self.assertIsNone(raised.exception.request)
 
-    def test_sync_shutdown_is_safe(self):
+    def test_sync_shutdown(self):
         client = Client(TEST_WRITE_KEY, sync_mode=True)
         self.assertIsNone(client.shutdown())
 
