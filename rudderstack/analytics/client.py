@@ -309,7 +309,8 @@ class Client(object):
         """Ends the consumer thread once the queue is empty.
         Blocks execution until finished
         """
-        for consumer in self.consumers:
+        # sync_mode has no consumers (None); shutdown() must not raise there.
+        for consumer in self.consumers or []:
             consumer.pause()
             try:
                 consumer.join()
