@@ -4,12 +4,13 @@ from threading import Thread
 import backoff
 import json
 
-from rudderstack.analytics.request import post, APIError, DatetimeSerializer
+from rudderstack.analytics.request import (
+    post, APIError, DatetimeSerializer, sanitize_exception)
 
 from queue import Empty
 
-# Our servers only accept payloads within this limit. Here limit is set slightly
-# lower to leave space for extra data that will be added later, eg. "sentAt".
+# Our servers only accept payloads within this limit. The limit is lower to
+# leave space for extra data that will be added later, eg. "sentAt".
 MAX_MSG_SIZE = 4 << 10 << 10  ## 4 mb
 BATCH_SIZE_LIMIT = 4 << 10 << 10 ## 4 mb
 
@@ -63,11 +64,17 @@ class Consumer(Thread):
         try:
             self.request(batch)
             success = True
-        except Exception as e:
-            self.log.error('error uploading: %s', e)
+        except Exception as error:
+            safe_error = sanitize_exception(error, self.write_key)
+            self.log.error('error uploading: %s', safe_error)
             success = False
             if self.on_error:
-                self.on_error(e, batch)
+                try:
+                    self.on_error(safe_error, batch)
+                except Exception as callback_error:
+                    self.log.error(
+                        'error in on_error callback: %s',
+                        sanitize_exception(callback_error, self.write_key))
         finally:
             # mark items as acknowledged from queue
             for _ in batch:
@@ -89,22 +96,30 @@ class Consumer(Thread):
             try:
                 item = queue.get(
                     block=True, timeout=self.upload_interval - elapsed)
-                item_size = len(json.dumps(
-                    item, cls=DatetimeSerializer).encode())
-                if item_size > MAX_MSG_SIZE:
-                    self.log.error(
-                        'Item exceeds 4mb limit, dropping. (%s)', str(item))
-                    continue
-                items.append(item)
-                total_size += item_size
-                if total_size >= BATCH_SIZE_LIMIT:
-                    self.log.debug(
-                        'hit batch size limit (size: %d)', total_size)
-                    break
             except Empty:
                 break
-            except Exception as e:
-                self.log.exception('Exception: %s', e)
+
+            try:
+                item_size = len(json.dumps(
+                    item, cls=DatetimeSerializer).encode())
+            except Exception as error:
+                self.log.error(
+                    'Unable to serialize item, dropping: %s',
+                    sanitize_exception(error))
+                queue.task_done()
+                continue
+
+            if item_size > MAX_MSG_SIZE:
+                self.log.error('Item exceeds 4mb limit, dropping.')
+                queue.task_done()
+                continue
+
+            items.append(item)
+            total_size += item_size
+            if total_size >= BATCH_SIZE_LIMIT:
+                self.log.debug(
+                    'hit batch size limit (size: %d)', total_size)
+                break
 
         return items
 
@@ -125,7 +140,8 @@ class Consumer(Thread):
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,
-            giveup=fatal_exception)
+            giveup=fatal_exception,
+            logger=None)
         def send_request():
             post(self.write_key, self.host, gzip=self.gzip,
                  timeout=self.timeout, batch=batch, proxies=self.proxies)
