@@ -1,0 +1,37 @@
+name: Retry published Python package validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-version:
+        description: Exact PyPI version (no v prefix)
+        required: true
+        type: string
+      release-tag:
+        description: Existing published release tag (v prefix)
+        required: true
+        type: string
+      release-commit:
+        description: Full 40-character commit of the release tag
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: retry-published-python-${{ inputs.release-tag }}
+  cancel-in-progress: false
+
+jobs:
+  accept-published:
+    name: Validate exact published package (no upload)
+    if: ${{ github.repository == 'rudderlabs/rudder-sdk-python' && github.ref == 'refs/heads/master' }}
+    permissions:
+      contents: read # checkout and published release metadata
+    uses: ./.github/workflows/accept-published-package.yml
+    with:
+      package-version: ${{ inputs.package-version }}
+      release-tag: ${{ inputs.release-tag }}
+      release-commit: ${{ inputs.release-commit }}
+    secrets:
+      release-private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}

@@ -1,0 +1,170 @@
+# RESOLVE: Replace the blocked shared action SHA and confirm published-mode/full-suite inputs,
+# synchronous delivery+cleanup result, central provenance and org allowlist after SDK-5961/5962 land.
+name: Accept published Python package
+
+on:
+  workflow_call:
+    inputs:
+      package-version:
+        required: true
+        type: string
+      release-tag:
+        required: true
+        type: string
+      release-commit:
+        required: true
+        type: string
+    secrets:
+      release-private-key:
+        required: true
+
+permissions: {}
+
+jobs:
+  accept:
+    name: Validate release provenance and run full published E2E
+    if: ${{ github.repository == 'rudderlabs/rudder-sdk-python' && ((github.event_name == 'release' && github.event.action == 'published' && github.ref == format('refs/tags/{0}', inputs.release-tag)) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read # checkout and GitHub release metadata
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Validate caller inputs
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] ||
+             [[ "v$PACKAGE_VERSION" != "$RELEASE_TAG" ]] ||
+             [[ ! "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]] ||
+             { [[ "$EVENT_NAME" == 'release' ]] && [[ "$EVENT_RELEASE_TAG" != "$RELEASE_TAG" ]]; }; then
+            echo 'Invalid release tag, package version or commit' >&2
+            exit 1
+          fi
+          if [[ ! "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo 'Unsupported package version' >&2
+            exit 1
+          fi
+
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: refs/tags/${{ inputs.release-tag }}
+
+      - name: Check tag commit and package metadata
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$RELEASE_COMMIT" ]]; then
+            echo 'Release tag does not resolve to the requested commit' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import ast
+          import os
+          from pathlib import Path
+
+          tree = ast.parse(Path('rudderstack/analytics/version.py').read_text(encoding='utf-8'))
+          versions = [node.value.value for node in tree.body
+                      if isinstance(node, ast.Assign) and
+                      any(isinstance(target, ast.Name) and target.id == 'VERSION'
+                          for target in node.targets) and
+                      isinstance(node.value, ast.Constant) and
+                      isinstance(node.value.value, str)]
+          if len(versions) != 1 or versions[0] != os.environ['PACKAGE_VERSION']:
+              raise SystemExit('Release tag package version does not match requested version')
+          PY
+          # A release can outlive a moved tag. For retries, require the tag
+          # commit to be reachable from the protected master branch as well.
+          release="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG")"
+          published="$(jq -r '.draft == false and .published_at != null' <<< "$release")"
+          if [[ "$published" != 'true' ]]; then
+            echo 'Tag has no published GitHub release' >&2
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            git fetch --no-tags origin refs/heads/master
+            if ! git merge-base --is-ancestor "$RELEASE_COMMIT" FETCH_HEAD; then
+              echo 'Tag commit is not on the protected release branch' >&2
+              exit 1
+            fi
+            # Release metadata may name a moving branch; only a SHA target
+            # provides an independent commit match for validation-only retry.
+            target="$(jq -r '.target_commitish' <<< "$release")"
+            if [[ ! "$target" =~ ^[0-9a-f]{40}$ ]] || [[ "$target" != "$RELEASE_COMMIT" ]]; then
+              echo 'Release target does not authenticate the tag commit; manual retry requires a SHA target' >&2
+              exit 1
+            fi
+          fi
+
+      - name: Verify exact public PyPI distributions
+        id: verify-pypi
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          requested = os.environ['PACKAGE_VERSION']
+          version = requested.replace('-rc.', 'rc')
+          url = 'https://pypi.org/pypi/rudder-sdk-python/{}/json'.format(version)
+          for attempt in range(20):
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as response:
+                      metadata = json.load(response)
+                  files = metadata['urls']
+                  if (metadata['info']['version'] == version and
+                          {'bdist_wheel', 'sdist'} <= {item['packagetype'] for item in files}):
+                      with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+                          print('canonical-version={}'.format(version), file=output)
+                      break
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 404:
+                      raise
+              if attempt < 19:
+                  time.sleep(15)
+          else:
+              raise SystemExit('Exact PyPI version must have a wheel and sdist')
+          PY
+
+      - name: Generate repository-scoped GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.release-private-key }}
+          owner: ${{ github.repository_owner }}
+          repositories: rudder-sdk-e2e-tests
+          permission-actions: write
+
+      - name: Run exact published-package full E2E
+        # Fail closed until the reviewed SDK-5961/5962 action exists at a verified SHA.
+        uses: rudderlabs/rudder-sdk-e2e-tests/.github/actions/server-sdk-e2e@0000000000000000000000000000000000000000 # RESOLVE: reviewed full action SHA
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          sdk: python
+          mode: published
+          package-version: ${{ steps.verify-pypi.outputs.canonical-version }}
+          release-tag: ${{ inputs.release-tag }}
+          release-commit: ${{ inputs.release-commit }}
+          suite: full

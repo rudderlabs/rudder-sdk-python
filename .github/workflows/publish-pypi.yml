@@ -18,6 +18,9 @@ jobs:
   build:
     name: Build and validate distributions
     runs-on: ubuntu-latest
+    outputs:
+      package-version: ${{ steps.validate.outputs.package-version }}
+      release-commit: ${{ steps.validate.outputs.release-commit }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
@@ -36,6 +39,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Validate release tag and package version
+        id: validate
         shell: bash
         run: |
           if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
@@ -47,6 +51,12 @@ jobs:
           if [[ "v${package_version}" != "${RELEASE_TAG}" ]]; then
             echo "Tag ${RELEASE_TAG} does not match package version ${package_version}" >&2
             exit 1
+          fi
+
+          release_commit="$(git rev-parse HEAD)"
+          if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+            echo "package-version=${package_version}" >> "$GITHUB_OUTPUT"
+            echo "release-commit=${release_commit}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install build tools and package dependencies
@@ -94,10 +104,21 @@ jobs:
         with:
           skip-existing: false
 
+  accept-published:
+    name: Accept exact public package
+    needs: [build, publish]
+    uses: ./.github/workflows/accept-published-package.yml
+    with:
+      package-version: ${{ needs.build.outputs.package-version }}
+      release-tag: ${{ github.event.release.tag_name }}
+      release-commit: ${{ needs.build.outputs.release-commit }}
+    secrets:
+      release-private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
+
   notify-slack:
     name: Notify Slack
     if: ${{ always() }}
-    needs: [build, publish]
+    needs: [build, publish, accept-published]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -108,7 +129,7 @@ jobs:
           egress-policy: audit
 
       - name: Send success message to Slack channel
-        if: needs.publish.result == 'success'
+        if: ${{ needs.build.result == 'success' && needs.publish.result == 'success' && needs.accept-published.result == 'success' }}
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -138,8 +159,20 @@ jobs:
               ]
             }
 
+      - name: Report published package with failed acceptance
+        if: ${{ needs.publish.result == 'success' && needs.accept-published.result != 'success' }}
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        with:
+          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+          payload: |
+            {
+              "text": "Python SDK ${{ github.event.release.tag_name }} is published on PyPI, but full published-package E2E acceptance failed or did not complete. No automatic unpublish. Validate again using the retry workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+
       - name: Send failure message to Slack channel
-        if: needs.publish.result != 'success'
+        if: ${{ needs.build.result != 'success' || needs.publish.result != 'success' }}
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

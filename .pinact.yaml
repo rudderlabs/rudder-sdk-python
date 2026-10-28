@@ -1,0 +1,10 @@
+version: 3
+min_age:
+  value: 7
+rules:
+  - min_age: 0
+    conditions:
+      - expr: 'ActionRepoOwner == "rudderlabs"'
+  - ignore: true
+    conditions:
+      - expr: 'ActionName startsWith "docker://"'
