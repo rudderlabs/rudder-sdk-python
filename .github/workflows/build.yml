@@ -9,12 +9,17 @@ permissions:
 
 jobs:
   build:
-    # Python 3.8 and 3.9 are unavailable on the current ubuntu-latest image.
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        include:
+          # Python 3.8 and 3.9 are unavailable on the current ubuntu-latest image.
+          - {python-version: "3.8", runner: ubuntu-24.04}
+          - {python-version: "3.9", runner: ubuntu-24.04}
+          - {python-version: "3.10", runner: ubuntu-latest}
+          - {python-version: "3.11", runner: ubuntu-latest}
+          - {python-version: "3.12", runner: ubuntu-latest}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1

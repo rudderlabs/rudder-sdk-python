@@ -40,8 +40,8 @@ jobs:
         id: validate
         shell: bash
         run: |
-          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Invalid release tag: ${RELEASE_TAG}" >&2
+          if [[ ! "${RELEASE_TAG}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Invalid stable release tag: ${RELEASE_TAG}" >&2
             exit 1
           fi
 
@@ -122,76 +122,70 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Send success message to Slack channel
-        if: ${{ needs.build.result == 'success' && needs.publish.result == 'success' && needs.accept-published.result == 'success' }}
-        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
+      - name: Prepare release notification
+        id: notification
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          PROJECT_NAME: Python SDK
-        with:
-          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "New release: ${{ env.PROJECT_NAME }}"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Release: <${{ github.event.release.html_url }}|${{ github.event.release.tag_name }}>*\n*PyPI: <https://pypi.org/project/rudder-sdk-python/|rudder-sdk-python on PyPI>*"
-                  }
-                }
-              ]
-            }
+          RELEASE_VERSION: ${{ needs.build.outputs.package-version || github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          ACCEPT_RESULT: ${{ needs.accept-published.result }}
+        shell: bash
+        run: |
+          version="${RELEASE_VERSION#v}"
+          date_utc="$(date -u +%Y-%m-%d)"
+          if [[ "$BUILD_RESULT" == success && "$PUBLISH_RESULT" == success && "$ACCEPT_RESULT" == success ]]; then
+            status='release complete'
+            registry='exact public PyPI version verified'
+            acceptance='full delivery and cleanup passed'
+          elif [[ "$PUBLISH_RESULT" == success ]]; then
+            status='published; validation failed or incomplete'
+            registry='published on PyPI; validation failed or incomplete'
+            acceptance='full delivery and cleanup failed or incomplete'
+          else
+            status='build or upload failed or incomplete'
+            registry='upload not confirmed'
+            acceptance='not run'
+          fi
 
-      - name: Report published package with failed acceptance
-        if: ${{ needs.publish.result == 'success' && needs.accept-published.result != 'success' }}
-        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        with:
-          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
-          payload: |
-            {
-              "text": "Python SDK ${{ github.event.release.tag_name }} is published on PyPI, but full published-package E2E acceptance failed or did not complete. No automatic unpublish. Retry Published Python SDK E2E at the same release tag. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
+          root="Python SDK v${version} · ${date_utc} · ${status}"
+          root+=$'\n'"CC: <!subteam^S03SW7DM8P3>"
+          details="*Release:* <${RELEASE_URL}|v${version}>"
+          if [[ "$PUBLISH_RESULT" == success ]]; then
+            details+=$'\n'"*PyPI:* <https://pypi.org/project/rudder-sdk-python/${version}/|rudder-sdk-python ${version}>"
+          fi
+          details+=$'\n'"*Registry:* ${registry}"
+          details+=$'\n'"*Full E2E:* ${acceptance}"
+          details+=$'\n'"*Checks:* build ${BUILD_RESULT}, upload ${PUBLISH_RESULT}, acceptance ${ACCEPT_RESULT}"
+          details+=$'\n'"*Run:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|view workflow>"
+          if [[ "$PUBLISH_RESULT" == success && "$ACCEPT_RESULT" != success ]]; then
+            details+=$'\n'"*Retry:* run Published Python SDK E2E at the same release tag; validation only."
+          fi
+          {
+            echo "root_payload=$(jq -nc --arg text "$root" '{text: $text, unfurl_links: false, unfurl_media: false}')"
+            echo "detail_json=$(jq -nc --arg text "$details" '$text')"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Send failure message to Slack channel
-        if: ${{ needs.build.result != 'success' || needs.publish.result != 'success' }}
+      - name: Post release status to Slack
+        id: root
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          PROJECT_NAME: Python SDK
+        with:
+          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+          payload: ${{ steps.notification.outputs.root_payload }}
+
+      - name: Post release details in thread
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         with:
           channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
           payload: |
             {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "Release failed: ${{ env.PROJECT_NAME }}"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Release: <${{ github.event.release.html_url }}|${{ github.event.release.tag_name }}>*\n*Build:* `${{ needs.build.result }}`\n*Publish:* `${{ needs.publish.result }}`\n*Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>*"
-                  }
-                }
-              ]
+              "text": ${{ steps.notification.outputs.detail_json }},
+              "thread_ts": "${{ steps.root.outputs.ts }}",
+              "reply_broadcast": false,
+              "unfurl_links": false,
+              "unfurl_media": false
             }

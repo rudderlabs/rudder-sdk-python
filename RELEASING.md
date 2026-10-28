@@ -15,7 +15,7 @@ The repository uses release-please for versioning and GitHub releases. A separat
    python -c "from rudderstack.analytics.version import VERSION; print(VERSION)"
    ```
 
-The workflow sends a release-complete notification only after the wheel and sdist pass validation, PyPI accepts them, and the shared full E2E suite accepts **that exact version from public PyPI** (including delivery and cleanup). A published version whose acceptance fails or is skipped remains published: the workflow reports this separately, with the run link, and does not unpublish it. Build or upload failures also produce a failure notification. The PR native test/quality suite is not a source-candidate full E2E suite for Python.
+The workflow accepts stable `X.Y.Z` releases only, and checks that policy before upload. It sends a release-complete notification only after the wheel and sdist pass validation, PyPI accepts them, and the shared full E2E suite accepts **that exact version from public PyPI** (including delivery and cleanup). A published version whose acceptance fails or is skipped remains published: the workflow reports “published; validation failed or incomplete” and does not unpublish it. Build or upload failures also produce a failure notification. Each release notification has a short channel message and a non-broadcast thread reply with links and check results. The PR native test/quality suite is not a source-candidate full E2E suite for Python.
 
 The workflow does not support manual publishing. PyPI rejects duplicate uploads (`skip-existing: false`). Retry acceptance with **Published Python SDK E2E**, selecting the existing release tag as the workflow ref:
 
