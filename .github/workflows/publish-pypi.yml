@@ -20,7 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       package-version: ${{ steps.validate.outputs.package-version }}
-      release-commit: ${{ steps.validate.outputs.release-commit }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
@@ -31,7 +30,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -53,10 +51,8 @@ jobs:
             exit 1
           fi
 
-          release_commit="$(git rev-parse HEAD)"
           if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
             echo "package-version=${package_version}" >> "$GITHUB_OUTPUT"
-            echo "release-commit=${release_commit}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install build tools and package dependencies
@@ -110,10 +106,8 @@ jobs:
     uses: ./.github/workflows/accept-published-package.yml
     with:
       package-version: ${{ needs.build.outputs.package-version }}
-      release-tag: ${{ github.event.release.tag_name }}
-      release-commit: ${{ needs.build.outputs.release-commit }}
     secrets:
-      release-private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
+      RELEASE_PRIVATE_KEY: ${{ secrets.RELEASE_PRIVATE_KEY }}
 
   notify-slack:
     name: Notify Slack
@@ -168,7 +162,7 @@ jobs:
           channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
           payload: |
             {
-              "text": "Python SDK ${{ github.event.release.tag_name }} is published on PyPI, but full published-package E2E acceptance failed or did not complete. No automatic unpublish. Validate again using the retry workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": "Python SDK ${{ github.event.release.tag_name }} is published on PyPI, but full published-package E2E acceptance failed or did not complete. No automatic unpublish. Retry Published Python SDK E2E at the same release tag. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
 
       - name: Send failure message to Slack channel

@@ -4,14 +4,10 @@ updates:
     directory: "/"
     schedule:
       # Routine updates only; security updates are advisory-driven.
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 0
     cooldown:
       default-days: 7
-    groups:
-      pip-security:
-        applies-to: security-updates
-        patterns: ['*']
     labels:
       - dependencies
       - python
@@ -20,18 +16,10 @@ updates:
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     open-pull-requests-limit: 0
     cooldown:
       default-days: 7
-      exclude:
-        - 'rudderlabs/*'
-    groups:
-      actions-security:
-        applies-to: security-updates
-        patterns: ['*']
-      actions:
-        patterns: ['*']
     labels:
       - dependencies
       - github_actions

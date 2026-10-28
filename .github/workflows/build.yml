@@ -9,8 +9,7 @@ permissions:
 
 jobs:
   build:
-    # Python 3.8 and 3.9 are unavailable on the current ubuntu-latest image.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
