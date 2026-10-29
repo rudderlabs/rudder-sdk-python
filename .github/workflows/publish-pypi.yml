@@ -158,7 +158,6 @@ jobs:
           fi
 
           root="Python SDK v${version} · ${date_utc} · ${status}"
-          root+=$'\n'"CC: <!subteam^S03SW7DM8P3>"
           details="*Release:* <${RELEASE_URL}|v${version}>"
           if [[ "$PUBLISH_RESULT" == success ]]; then
             details+=$'\n'"*PyPI:* <https://pypi.org/project/rudder-sdk-python/${version}/|rudder-sdk-python ${version}>"

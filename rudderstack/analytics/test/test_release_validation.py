@@ -202,7 +202,7 @@ def test_notification_status_and_thread_details(build, publish, accept, status, 
     root = json.loads(outputs['root_payload'])
     details = json.loads(outputs['detail_json'])
     assert re.search(r'Python SDK v1\.2\.3 · \d{4}-\d{2}-\d{2} · ' + re.escape(status), root['text'])
-    assert '<!subteam^S03SW7DM8P3>' in root['text']
+    assert '<!subteam^' not in root['text']
     assert root['unfurl_links'] is False and root['unfurl_media'] is False
     assert registry in details
     assert 'https://example.test/central-run' in details
