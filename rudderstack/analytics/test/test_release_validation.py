@@ -2,6 +2,7 @@ import json
 import os
 import re
 import runpy
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -41,7 +42,15 @@ def validation_step():
     return step(PUBLISH_WORKFLOW, 'build', 'Validate release tag and package version')
 
 
-def run_validation(release_tag, check_syntax=False, output=None, cwd=REPOSITORY_ROOT):
+def require_tools(*names):
+    for name in names:
+        if shutil.which(name) is None:
+            pytest.skip('{} is required for this workflow script test'.format(name))
+
+
+def run_validation(release_tag, check_syntax=False, output=None, cwd=REPOSITORY_ROOT,
+                   prerelease='false', draft='false'):
+    require_tools('bash')
     command = ['bash', '-n'] if check_syntax else ['bash']
     return subprocess.run(
         command,
@@ -49,6 +58,7 @@ def run_validation(release_tag, check_syntax=False, output=None, cwd=REPOSITORY_
         capture_output=True,
         cwd=cwd,
         env={**os.environ, 'RELEASE_TAG': release_tag,
+             'RELEASE_PRERELEASE': prerelease, 'RELEASE_DRAFT': draft,
              **({'GITHUB_OUTPUT': str(output)} if output else {})},
         input=validation_step()['run'],
         text=True,
@@ -101,6 +111,17 @@ def test_build_exports_validated_version(tmp_path):
     assert output.read_text() == 'package-version={}\n'.format(VERSION)
 
 
+@pytest.mark.parametrize('prerelease,draft', [('true', 'false'), ('false', 'true'), ('', 'false')])
+def test_release_metadata_rejects_unsupported_events_before_upload(prerelease, draft):
+    result = run_validation('v{}'.format(VERSION), prerelease=prerelease, draft=draft)
+    assert result.returncode == 1
+    assert 'non-draft, non-prerelease' in result.stderr
+    assert validation_step()['env'] == {
+        'RELEASE_PRERELEASE': '${{ github.event.release.prerelease }}',
+        'RELEASE_DRAFT': '${{ github.event.release.draft }}',
+    }
+
+
 
 def test_publication_waits_for_acceptance_and_preserves_upload_controls():
     jobs = workflow(PUBLISH_WORKFLOW)['jobs']
@@ -138,6 +159,8 @@ def test_notification_distinguishes_publication_from_acceptance():
                for field in ('unfurl_links', 'unfurl_media'))
     assert 'needs.build.outputs.package-version' in prepare['env']['RELEASE_VERSION']
     assert 'always()' in notify['if']
+    assert "github.run_attempt == '1'" in notify['if']
+    assert thread['if'] == "steps.root.outputs.ts != ''"
     assert workflow(PUBLISH_WORKFLOW)['concurrency']['cancel-in-progress'] is False
 
 
@@ -162,6 +185,7 @@ def test_pr_matrix_keeps_old_python_on_ubuntu_24_04():
 ])
 def test_notification_status_and_thread_details(build, publish, accept, status, registry,
                                                 tmp_path):
+    require_tools('bash', 'jq')
     script = step(PUBLISH_WORKFLOW, 'notify-slack', 'Prepare release notification')['run']
     output = tmp_path / 'notification-outputs'
     result = subprocess.run(
@@ -170,7 +194,8 @@ def test_notification_status_and_thread_details(build, publish, accept, status, 
              'RELEASE_URL': 'https://example.test/releases/v1.2.3',
              'BUILD_RESULT': build, 'PUBLISH_RESULT': publish, 'ACCEPT_RESULT': accept,
              'GITHUB_SERVER_URL': 'https://example.test', 'GITHUB_REPOSITORY': 'rudderlabs/rudder-sdk-python',
-             'GITHUB_RUN_ID': '123'},
+             'GITHUB_RUN_ID': '123', 'CENTRAL_RUN_URL': 'https://example.test/central-run',
+             'GITHUB_STEP_SUMMARY': str(tmp_path / 'summary')},
     )
     assert result.returncode == 0, result.stderr
     outputs = dict(line.split('=', 1) for line in output.read_text().splitlines())
@@ -180,10 +205,30 @@ def test_notification_status_and_thread_details(build, publish, accept, status, 
     assert '<!subteam^S03SW7DM8P3>' in root['text']
     assert root['unfurl_links'] is False and root['unfurl_media'] is False
     assert registry in details
+    assert 'https://example.test/central-run' in details
+    assert status in (tmp_path / 'summary').read_text()
     assert 'build {}, upload {}, acceptance {}'.format(build, publish, accept) in details
     assert '<https://example.test/rudderlabs/rudder-sdk-python/actions/runs/123|view workflow>' in details
     assert ('*PyPI:*' in details) == (publish == 'success')
     assert ('*Retry:*' in details) == (publish == 'success' and accept != 'success')
+
+
+@pytest.mark.parametrize('root,ts,reply,accepted', [
+    ('success', '123.456', 'success', True),
+    ('failure', '', 'skipped', False),
+    ('success', '', 'skipped', False),
+    ('success', 'invalid', 'success', False),
+    ('success', '123.456', 'failure', False),
+])
+def test_notification_requires_confirmed_root_and_reply(root, ts, reply, accepted, tmp_path):
+    require_tools('bash')
+    script = step(PUBLISH_WORKFLOW, 'notify-slack', 'Require confirmed release notification')['run']
+    result = subprocess.run(
+        ['bash', '-e', '-c', script], text=True, capture_output=True,
+        env={**os.environ, 'ROOT_RESULT': root, 'ROOT_TS': ts, 'REPLY_RESULT': reply,
+             'GITHUB_STEP_SUMMARY': str(tmp_path / 'summary')},
+    )
+    assert (result.returncode == 0) == accepted
 
 
 def test_retry_has_no_upload_path_and_uses_the_shared_action_contract():
@@ -197,6 +242,7 @@ def test_retry_has_no_upload_path_and_uses_the_shared_action_contract():
     path, sha = job['uses'].split('@')
     assert path == 'rudderlabs/github-action-sdk-e2e/.github/workflows/published-sdk-e2e.yml'
     assert re.fullmatch('[0-9a-f]{40}', sha)
+    assert sha == 'b6de40cc65abe8ee6c6593aac1787aea746b671f'
     assert job['with'] == {
         'package-version': '${{ inputs.package-version || github.ref_name }}',
         'release-app-client-id': '${{ vars.RELEASE_APP_CLIENT_ID }}',

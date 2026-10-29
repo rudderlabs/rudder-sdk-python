@@ -38,8 +38,15 @@ jobs:
 
       - name: Validate release tag and package version
         id: validate
+        env:
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          RELEASE_DRAFT: ${{ github.event.release.draft }}
         shell: bash
         run: |
+          if [[ "$RELEASE_PRERELEASE" != false || "$RELEASE_DRAFT" != false ]]; then
+            echo 'Only published, non-draft, non-prerelease releases can upload to PyPI.' >&2
+            exit 1
+          fi
           if [[ ! "${RELEASE_TAG}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
             echo "Invalid stable release tag: ${RELEASE_TAG}" >&2
             exit 1
@@ -111,9 +118,10 @@ jobs:
 
   notify-slack:
     name: Notify Slack
-    if: ${{ always() }}
+    if: ${{ always() && github.run_attempt == '1' }}
     needs: [build, publish, accept-published]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -130,6 +138,7 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
           PUBLISH_RESULT: ${{ needs.publish.result }}
           ACCEPT_RESULT: ${{ needs.accept-published.result }}
+          CENTRAL_RUN_URL: ${{ needs.accept-published.outputs.run-url }}
         shell: bash
         run: |
           version="${RELEASE_VERSION#v}"
@@ -158,9 +167,13 @@ jobs:
           details+=$'\n'"*Full E2E:* ${acceptance}"
           details+=$'\n'"*Checks:* build ${BUILD_RESULT}, upload ${PUBLISH_RESULT}, acceptance ${ACCEPT_RESULT}"
           details+=$'\n'"*Run:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|view workflow>"
+          if [[ -n "$CENTRAL_RUN_URL" ]]; then
+            details+=$'\n'"*Central E2E:* <${CENTRAL_RUN_URL}|view validation>"
+          fi
           if [[ "$PUBLISH_RESULT" == success && "$ACCEPT_RESULT" != success ]]; then
             details+=$'\n'"*Retry:* run Published Python SDK E2E at the same release tag; validation only."
           fi
+          printf '%s\n\n%s\n' "$root" "$details" >> "$GITHUB_STEP_SUMMARY"
           {
             echo "root_payload=$(jq -nc --arg text "$root" '{text: $text, unfurl_links: false, unfurl_media: false}')"
             echo "detail_json=$(jq -nc --arg text "$details" '$text')"
@@ -176,6 +189,8 @@ jobs:
           payload: ${{ steps.notification.outputs.root_payload }}
 
       - name: Post release details in thread
+        id: reply
+        if: steps.root.outputs.ts != ''
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -189,3 +204,15 @@ jobs:
               "unfurl_links": false,
               "unfurl_media": false
             }
+
+      - name: Require confirmed release notification
+        if: always()
+        env:
+          ROOT_RESULT: ${{ steps.root.outcome }}
+          ROOT_TS: ${{ steps.root.outputs.ts }}
+          REPLY_RESULT: ${{ steps.reply.outcome }}
+        run: |
+          if [[ "$ROOT_RESULT" != success || ! "$ROOT_TS" =~ ^[0-9]+\.[0-9]+$ || "$REPLY_RESULT" != success ]]; then
+            echo 'Release notification failed or was not confirmed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
