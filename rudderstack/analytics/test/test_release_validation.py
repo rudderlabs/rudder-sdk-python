@@ -101,28 +101,6 @@ def test_build_exports_validated_version(tmp_path):
     assert output.read_text() == 'package-version={}\n'.format(VERSION)
 
 
-@pytest.mark.parametrize('event,ref_type,tag,version,valid', [
-    ('release', 'tag', 'v1.2.3', '1.2.3', True),
-    ('workflow_dispatch', 'tag', 'v1.2.3', 'v1.2.3', True),
-    ('workflow_dispatch', 'branch', 'master', '1.2.3', False),
-    ('pull_request', 'tag', 'v1.2.3', '1.2.3', False),
-    ('push', 'tag', 'v1.2.3', '1.2.3', False),
-    ('release', 'tag', 'v1.2.3', '1.2.4', False),
-    ('release', 'tag', 'v1.2.3', 'latest', False),
-    ('release', 'tag', 'v01.2.3', '01.2.3', False),
-    ('release', 'tag', 'v1.2.3-rc.1', '1.2.3-rc.1', False),
-    ('workflow_dispatch', 'tag', 'v1.2.3;echo bad', '1.2.3;echo bad', False),
-])
-def test_acceptance_guard(event, ref_type, tag, version, valid, tmp_path):
-    guard = step(ACCEPT_WORKFLOW, 'validate', 'Require an exact release tag')['run']
-    result = subprocess.run(
-        ['bash'], input=guard, text=True, capture_output=True, check=False,
-        cwd=tmp_path, env={**os.environ, 'GITHUB_EVENT_NAME': event,
-                           'GITHUB_REF_TYPE': ref_type, 'RELEASE_TAG': tag,
-                           'PACKAGE_VERSION': version},
-    )
-    assert (result.returncode == 0) == valid, result.stderr
-
 
 def test_publication_waits_for_acceptance_and_preserves_upload_controls():
     jobs = workflow(PUBLISH_WORKFLOW)['jobs']
@@ -215,25 +193,13 @@ def test_retry_has_no_upload_path_and_uses_the_shared_action_contract():
     assert accept['permissions'] == {'contents': 'read'}
     assert list(accept['jobs']) == ['validate']
     job = accept['jobs']['validate']
-    assert job['runs-on'] == 'ubuntu-latest'
-    assert 'if' not in job  # Invalid inputs fail; acceptance must not silently skip.
-    assert 'concurrency' not in accept  # Central workflow owns live locking and cleanup.
-    steps = job['steps']
-    uses = [item.get('uses', '') for item in steps]
-    assert not any('checkout@' in action or 'pypi-publish@' in action for action in uses)
-    token = next(item for item in steps if 'create-github-app-token@' in item.get('uses', ''))
-    assert token['with']['repositories'] == 'rudder-sdk-e2e-tests'
-    assert token['with']['permission-actions'] == 'write'
-    assert not any(key.startswith('permission-') and key != 'permission-actions'
-                   for key in token['with'])
-    action = steps[-1]
-    repository, sha = action['uses'].split('@')
-    assert repository == 'rudderlabs/github-action-sdk-e2e'
-    assert len(sha) == 40 and set(sha) <= set('0123456789abcdef') and set(sha) != {'0'}
-    assert set(action['with']) == {'token', 'package-version', 'suite'}
-    assert action['with']['suite'] == 'full'
-    assert action['with']['package-version'] == '${{ inputs.package-version || github.ref_name }}'
-    # Provenance and registry installation belong to the central workflow.
-    text = ACCEPT_WORKFLOW.read_text()
-    assert 'target_commitish' not in text
-    assert 'pypi.org' not in text
+    assert 'steps' not in job and 'runs-on' not in job
+    path, sha = job['uses'].split('@')
+    assert path == 'rudderlabs/github-action-sdk-e2e/.github/workflows/published-sdk-e2e.yml'
+    assert re.fullmatch('[0-9a-f]{40}', sha)
+    assert job['with'] == {
+        'package-version': '${{ inputs.package-version || github.ref_name }}',
+        'release-app-client-id': '${{ vars.RELEASE_APP_CLIENT_ID }}',
+    }
+    assert job['secrets'] == {'RELEASE_PRIVATE_KEY': '${{ secrets.RELEASE_PRIVATE_KEY }}'}
+    assert 'SLACK' not in str(accept) and 'id-token: write' not in ACCEPT_WORKFLOW.read_text()
