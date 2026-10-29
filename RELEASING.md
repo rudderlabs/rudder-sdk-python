@@ -15,9 +15,38 @@ The repository uses release-please for versioning and GitHub releases. A separat
    python -c "from rudderstack.analytics.version import VERSION; print(VERSION)"
    ```
 
-The workflow sends the successful release notification only after PyPI accepts the package. If the build or publication fails, the workflow sends a failure notification with a link to the GitHub Actions run. PyPI rejects an upload when that version already exists, and the workflow reports that rejection as a failure.
+The workflow accepts stable `X.Y.Z` releases only, and checks that policy before upload. It sends a release-complete notification only after the wheel and sdist pass validation, PyPI accepts them, and the shared full E2E suite accepts **that exact version from public PyPI** (including delivery and cleanup). A published version whose acceptance fails or is skipped remains published: the workflow reports “published; validation failed or incomplete” and does not unpublish it. Build or upload failures also produce a failure notification. Only the first release-run attempt sends a notification. Reruns remain silent. Each notification has a short channel message and a non-broadcast thread reply with links, available central-run diagnostics, and check results. Notification failures remain visible in the workflow summary. The PR native test/quality suite is not a source-candidate full E2E suite for Python.
 
-The workflow does not support manual publishing.
+The workflow does not support manual publishing. PyPI rejects duplicate uploads (`skip-existing: false`). Retry acceptance with **Published Python SDK E2E**, selecting the existing release tag as the workflow ref:
+
+```sh
+gh workflow run accept-published-package.yml --repo rudderlabs/rudder-sdk-python --ref vX.Y.Z
+```
+
+The retry uses the tag's event-time commit and exact version. It cannot upload packages. The central workflow checks the tag's commit, its ancestry on `master`, public PyPI metadata, and the installed wheel's version and SHA-256. A release whose `target_commitish` names a branch is valid; that field is not used as commit proof. The shared action waits for delivery validation and cleanup before returning.
+
+Published E2E currently accepts stable `X.Y.Z` versions only. Tags must contain this workflow, so older tags need an exact-version dispatch through the central workflow instead. A successful retry does not change the original failed run or its notification. A published package remains published if acceptance fails.
+
+The central prerequisites and shared action v1.0.0 are merged. This caller pins the released workflow at `b6de40cc65abe8ee6c6593aac1787aea746b671f`. Hosted live acceptance remains pending the next normal release under [SDK-5971](https://linear.app/rudderstack/issue/SDK-5971).
+
+## Retry after a workflow fix
+
+A tag retry uses workflow code and pins stored at that tag. The retry workflow
+must exist on the default branch and selected tag. If a later workflow fix is
+needed, use the current central workflow. Copy the full commit SHA from the
+original release run. Replace the version, commit placeholder, and request ID:
+
+```sh
+gh workflow run server-sdk-validation.yml --repo rudderlabs/rudder-sdk-e2e-tests --ref main \
+  -f selection=auto -f source_repository=rudderlabs/rudder-sdk-python \
+  -f source_sha=RELEASE_EVENT_COMMIT_SHA -f package_version=X.Y.Z \
+  -f suite=full -f request_id=python-published-X_Y_Z-retry-UNIQUE_ID
+```
+
+This validates the published version without uploading or announcing. Record the
+new evidence in the release ticket and existing release thread. Do not move the
+tag. A failed first-attempt notification needs a separate thread repair; rerunning
+all publishing jobs does not send another announcement.
 
 ## Authentication
 
