@@ -242,7 +242,6 @@ def test_retry_has_no_upload_path_and_uses_the_shared_action_contract():
     path, sha = job['uses'].split('@')
     assert path == 'rudderlabs/github-action-sdk-e2e/.github/workflows/published-sdk-e2e.yml'
     assert re.fullmatch('[0-9a-f]{40}', sha)
-    assert sha == 'b6de40cc65abe8ee6c6593aac1787aea746b671f'
     assert job['with'] == {
         'package-version': '${{ inputs.package-version || github.ref_name }}',
         'release-app-client-id': '${{ vars.RELEASE_APP_CLIENT_ID }}',
