@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.1.10](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.9...v2.1.10) (2026-10-30)
+
+
+### Miscellaneous
+
+* configure security-focused dependabot updates ([#165](https://github.com/rudderlabs/rudder-sdk-python/issues/165)) ([3ed8d17](https://github.com/rudderlabs/rudder-sdk-python/commit/3ed8d1759db24e90950d4540f3fdbf7a36e0eff5))
+* move self-hosted CI jobs to the org runner scale set ([#152](https://github.com/rudderlabs/rudder-sdk-python/issues/152)) ([835602f](https://github.com/rudderlabs/rudder-sdk-python/commit/835602f8d6901c967d75bb0ff5468d86a023fa0a))
+* preserve dependabot prs and schedule quarterly pip updates ([#146](https://github.com/rudderlabs/rudder-sdk-python/issues/146)) ([c1bcd67](https://github.com/rudderlabs/rudder-sdk-python/commit/c1bcd67b15c329a24747b636f9b45712e71b14aa))
+* **release:** gate python publication notification on exact package e2e ([#166](https://github.com/rudderlabs/rudder-sdk-python/issues/166)) ([322d913](https://github.com/rudderlabs/rudder-sdk-python/commit/322d91358fb7e86bac746e7eba89e1c18f98772c))
+* run full live e2e on release prs ([#169](https://github.com/rudderlabs/rudder-sdk-python/issues/169)) ([0c0bcf7](https://github.com/rudderlabs/rudder-sdk-python/commit/0c0bcf72399cf144aa714ff14b3781df8b31e335))
+* switch branding images to CDN URLs ([#149](https://github.com/rudderlabs/rudder-sdk-python/issues/149)) ([536022e](https://github.com/rudderlabs/rudder-sdk-python/commit/536022e25991a3fea4b3b93299078470bc935c1a))
+* verify published e2e with per-run cleanup ([#168](https://github.com/rudderlabs/rudder-sdk-python/issues/168)) ([8f81528](https://github.com/rudderlabs/rudder-sdk-python/commit/8f815285a416251f9fa67c728178800d490d9e65))
+
 ## [2.1.9](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.8...v2.1.9) (2026-09-08)
 
 
