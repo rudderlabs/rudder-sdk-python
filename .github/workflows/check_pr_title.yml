@@ -5,13 +5,20 @@ on:
     branches: ['master']
     types: ['opened', 'reopened', 'edited', 'synchronize']
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   check_pr_title:
     name: Check PR title
-    runs-on: arc-amd64
+    # Fork PRs trigger this job, so it runs on a GitHub-hosted runner, not ARC.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # v2 reads the title from the event payload, so the job needs no token.
+    permissions: {}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
@@ -19,4 +26,7 @@ jobs:
           egress-policy: audit
 
       - name: Check PR title
-        uses: rudderlabs/github-action-check-pr-title@e5718471c8eebd75c51a10ccce35f2cf33d18c04 # v1.0.12
+        uses: rudderlabs/github-action-check-pr-title@3967756a96b89133e6cd700a8384a1e2b95cb21c # v2.0.3
+        with:
+          # v1 rejected a subject that starts with an ASCII capital letter. Keep that rule.
+          subjectPattern: ^(?![A-Z]).+$
