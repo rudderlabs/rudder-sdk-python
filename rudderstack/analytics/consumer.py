@@ -8,10 +8,16 @@ from rudderstack.analytics.request import post, APIError, DatetimeSerializer
 
 from queue import Empty
 
-# Our servers only accept payloads within this limit. Here limit is set slightly
-# lower to leave space for extra data that will be added later, eg. "sentAt".
-MAX_MSG_SIZE = 4 << 10 << 10  ## 4 mb
-BATCH_SIZE_LIMIT = 4 << 10 << 10 ## 4 mb
+# The data plane rejects request bodies larger than 4000 KB (rudder-server's
+# Gateway.maxReqSizeInKB, checked after gzip decompression) with a 413, and a
+# 4xx is not retried, so the whole batch would be lost. Batches are kept a
+# little below that to leave space for the request envelope, eg. "sentAt".
+MAX_REQUEST_SIZE = 4000 << 10
+BATCH_SIZE_LIMIT = MAX_REQUEST_SIZE - (1 << 10)
+# A message must fit in a batch on its own.
+MAX_MSG_SIZE = BATCH_SIZE_LIMIT
+# Messages in the batch array are separated by ", ".
+ITEM_SEPARATOR_SIZE = 2
 
 
 class Consumer(Thread):
@@ -40,6 +46,8 @@ class Consumer(Thread):
         self.retries = retries
         self.timeout = timeout
         self.proxies = proxies
+        # A message that did not fit in the previous batch, with its size.
+        self._pending = None
 
     def run(self):
         """Runs the consumer."""
@@ -82,6 +90,12 @@ class Consumer(Thread):
         start_time = time.monotonic()
         total_size = 0
 
+        if self._pending is not None:
+            item, item_size = self._pending
+            self._pending = None
+            items.append(item)
+            total_size += item_size
+
         while len(items) < self.upload_size:
             elapsed = time.monotonic() - start_time
             if elapsed >= self.upload_interval:
@@ -89,22 +103,34 @@ class Consumer(Thread):
             try:
                 item = queue.get(
                     block=True, timeout=self.upload_interval - elapsed)
-                item_size = len(json.dumps(
-                    item, cls=DatetimeSerializer).encode())
-                if item_size > MAX_MSG_SIZE:
-                    self.log.error(
-                        'Item exceeds 4mb limit, dropping. (%s)', str(item))
-                    continue
-                items.append(item)
-                total_size += item_size
-                if total_size >= BATCH_SIZE_LIMIT:
-                    self.log.debug(
-                        'hit batch size limit (size: %d)', total_size)
-                    break
             except Empty:
                 break
+            try:
+                item_size = len(json.dumps(
+                    item, cls=DatetimeSerializer).encode())
             except Exception as e:
                 self.log.exception('Exception: %s', e)
+                # The item is dropped, so it is done for queue.join().
+                queue.task_done()
+                continue
+            if item_size > MAX_MSG_SIZE:
+                self.log.error(
+                    'Item exceeds 4000kb limit, dropping. (%s)', str(item))
+                # The item is dropped, so it is done for queue.join().
+                queue.task_done()
+                continue
+            if items:
+                item_size += ITEM_SEPARATOR_SIZE
+            if total_size + item_size > BATCH_SIZE_LIMIT:
+                # Send it with the next batch instead of making this one
+                # too large for the data plane. It is still unfinished in the
+                # queue, so flush() waits for it.
+                self._pending = (item, item_size - ITEM_SEPARATOR_SIZE)
+                self.log.debug(
+                    'hit batch size limit (size: %d)', total_size)
+                break
+            items.append(item)
+            total_size += item_size
 
         return items
 

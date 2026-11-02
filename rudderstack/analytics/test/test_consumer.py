@@ -16,6 +16,8 @@ from rudderstack.analytics.request import APIError
 
 TEST_WRITE_KEY = 'test-write-key'
 TEST_DATA_PLANE_URL = 'https://example.test'
+# rudder-server rejects request bodies above Gateway.maxReqSizeInKB (4000)
+DATA_PLANE_REQUEST_LIMIT = 4000 << 10
 
 
 class TestConsumer(unittest.TestCase):
@@ -44,6 +46,55 @@ class TestConsumer(unittest.TestCase):
         next = consumer.next()
         self.assertEqual(next, [])
         self.assertTrue(q.empty())
+
+    def test_dropping_oversize_msg_marks_it_done(self):
+        # flush() waits on queue.join(), which hung forever after a drop
+        q = Queue()
+        consumer = Consumer(q, '')
+        q.put({'m': 'x' * MAX_MSG_SIZE})
+        q.put({'m': 'small'})
+        self.assertEqual(consumer.next(), [{'m': 'small'}])
+        q.task_done()  # the consumer acknowledges the sent batch
+        self.assertEqual(q.unfinished_tasks, 0)
+
+    def test_dropping_unserializable_msg_marks_it_done(self):
+        q = Queue()
+        consumer = Consumer(q, '')
+        q.put({'m': object()})
+        self.assertEqual(consumer.next(), [])
+        self.assertEqual(q.unfinished_tasks, 0)
+
+    def test_batch_stays_within_request_limit(self):
+        q = Queue()
+        consumer = Consumer(q, '', upload_size=100, upload_interval=0.5)
+        # three ~1.5MB messages: the old limit let all three into a ~4.5MB
+        # batch, which the data plane rejects with a 413
+        msgs = [{'m': str(i) * (1500 << 10)} for i in range(3)]
+        for msg in msgs:
+            q.put(msg)
+
+        batches = []
+        sent = []
+
+        def fake_post(*args, **kwargs):
+            data = json.dumps({'batch': kwargs['batch'],
+                               'sentAt': '2026-10-26T00:00:00.000000+00:00'})
+            sent.append(len(data.encode()))
+
+        with mock.patch('rudderstack.analytics.consumer.post',
+                        side_effect=fake_post):
+            while sum(len(batch) for batch in batches) < len(msgs):
+                batch = consumer.next()
+                batches.append(batch)
+                consumer.request(batch)
+                for _ in batch:
+                    q.task_done()
+
+        self.assertEqual([len(batch) for batch in batches], [2, 1])
+        self.assertEqual(sum(batches, []), msgs)
+        self.assertTrue(
+            all(size <= DATA_PLANE_REQUEST_LIMIT for size in sent), sent)
+        self.assertEqual(q.unfinished_tasks, 0)
 
     @mock.patch('rudderstack.analytics.consumer.post')
     def test_upload(self, post):
