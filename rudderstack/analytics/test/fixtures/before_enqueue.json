@@ -1,0 +1,272 @@
+{
+  "source": "sdk-architecture/sdks/llds/before-enqueue/fixtures/conformance.json",
+  "defaults": {
+    "payload_marker": "BE_PAYLOAD_MARKER_5704",
+    "clock": {
+      "hook_input": "2026-10-23T10:00:00.000Z",
+      "send": "2026-10-23T10:00:01.000Z"
+    },
+    "message_ids": [
+      "m1",
+      "m2"
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "identity_semantically_equal",
+      "title": "Identity hook has semantically equal single-event request",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-002",
+        "SDK-BEFORE-ENQUEUE-033"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        },
+        "compare_to_no_hook": "parsed_json_equal_complete_request"
+      }
+    },
+    {
+      "id": "unserialisable_output",
+      "title": "Unencodable output is a hook error",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-014",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022",
+        "SDK-BEFORE-ENQUEUE-025"
+      ],
+      "applicability": [
+        "unserialisable-output-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_unserialisable",
+          "set": {
+            "properties.bad": {
+              "non_json": "encoder-rejected value carrying BE_PAYLOAD_MARKER_5704"
+            }
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "cyclic_input_hook_error",
+      "title": "Cyclic input ends as a hook error without stack overflow",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-004",
+        "SDK-BEFORE-ENQUEUE-021",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "cyclic-input-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "drop",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "call_graph": {
+          "edge": "properties.self -> properties",
+          "stage": "SDK-owned enriched input before copy; retain caller marker"
+        }
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "accepted",
+        "error_handler_called": false,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        },
+        "stack_overflow": false,
+        "hook_error": true
+      }
+    },
+    {
+      "id": "shared_acyclic_input",
+      "title": "Shared acyclic containers are valid",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-003",
+        "SDK-BEFORE-ENQUEUE-004"
+      ],
+      "applicability": [
+        "cyclic-input-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "call_graph": {
+          "edges": [
+            "properties.a -> shared map",
+            "properties.b -> shared map"
+          ],
+          "shared_map": {
+            "marker": "BE_PAYLOAD_MARKER_5704"
+          }
+        }
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42,\"a\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\"},\"b\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\"}},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        }
+      }
+    }
+  ]
+}

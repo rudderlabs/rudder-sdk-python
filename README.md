@@ -54,6 +54,55 @@ analytics.track('user_id', 'Simple Track Event', anonymous_id='anonymousId',
 
 For more information on the supported calls, refer to the [**documentation**](https://docs.rudderstack.com/stream-sources/rudderstack-sdk-integration-guides/rudderstack-python-sdk#sending-events-from-rudderstack).
 
+## Editing or dropping events before enqueue
+
+Set `before_enqueue` to edit or drop events before they leave your process. It
+runs once per event, on the calling thread, after the SDK fills in `messageId`,
+`timestamp`, `channel` and `context`. It receives its own copy of the event as a
+dict. Return the (possibly edited) dict to send it, or `None` to drop it.
+
+```python
+import rudderstack.analytics as analytics
+
+
+def before_enqueue(msg):
+    # Drop: internal test traffic never leaves the process
+    if (msg.get('userId') or '').startswith('test-'):
+        return None
+    # Edit: strip the email before it is transmitted
+    for container in (msg, msg.get('context')):
+        if isinstance(container, dict):
+            traits = container.get('traits')
+            if isinstance(traits, dict):
+                traits.pop('email', None)
+    # Must return the event: an implicit None drops it
+    return msg
+
+
+analytics.before_enqueue = before_enqueue
+# This hook redacts PII, so never fall back to the unredacted original
+analytics.before_enqueue_on_error = 'drop'
+```
+
+The same options are available as `Client(..., before_enqueue=..., before_enqueue_on_error=...)`.
+
+- Returning `None` drops the event, including a hook that ends without a `return`.
+- A dropped event is not an error: `Client` methods return `(True, None)` and `on_error` is not called.
+- If the hook raises an `Exception`, returns something other than a dict or `None`,
+  changes the event `type`, removes a required field (`userId` or `anonymousId`,
+  `event` on track, `groupId` on group, `previousId` and `userId` on alias), or
+  returns unencodable data (including `NaN` or infinity), or grows the event past
+  the 4 MB limit, the SDK logs an error and, by default
+  (`'send'`), sends the original event. Set `before_enqueue_on_error = 'drop'`
+  to drop it instead. The error is never raised to your app.
+- Changes to `context.library`, `channel` and `messageId` are reverted with a warning.
+- The hook must be thread-safe if you call the SDK from several threads.
+- `sentAt` is absent from the hook input; the SDK sets it on the batch when sending.
+- `KeyboardInterrupt` and `SystemExit` propagate. Avoid including event data in
+  exceptions printed by your application or runtime.
+- SDK logs omit event payloads, including without a hook. Oversize errors keep
+  their existing type and prefix but report the message ID and size.
+
 ## Proxy configuration
 
 Pass `proxies` when you create a `Client`. A Requests-style mapping is preferred:

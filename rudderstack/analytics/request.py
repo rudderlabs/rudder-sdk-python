@@ -21,7 +21,7 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     url = remove_trailing_slash(host or 'https://api.rudderstack.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
-    log.debug('making request: %s', data)
+    log.debug('making request: %d events, %d bytes', len(body.get('batch', [])), len(data))
     headers = {
         'Content-Type': 'application/json',
         'User-Agent': 'analytics-python/' + VERSION

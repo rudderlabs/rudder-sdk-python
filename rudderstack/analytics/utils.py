@@ -43,7 +43,20 @@ def remove_trailing_slash(host):
     return host
 
 
-def clean(item):
+def clean(item, _active=None):
+    # Only hook output opts into cycle rejection. Track ancestors, not all seen
+    # containers, so shared acyclic input remains valid.
+    if _active is not None and isinstance(item, (dict, set, list, tuple)):
+        identity = id(item)
+        if identity in _active:
+            raise ValueError('Circular reference detected')
+        _active.add(identity)
+        try:
+            if isinstance(item, dict):
+                return _clean_dict(item, _active)
+            return _clean_list(item, _active)
+        finally:
+            _active.remove(identity)
     if isinstance(item, Decimal):
         return float(item)
     elif isinstance(item, (str, bool, numbers.Number, datetime,
@@ -54,25 +67,25 @@ def clean(item):
     elif isinstance(item, dict):
         return _clean_dict(item)
     elif isinstance(item, Enum):
-        return clean(item.value)
+        return clean(item.value, _active)
     else:
         return _coerce_unicode(item)
 
 
-def _clean_list(list_):
-    return [clean(item) for item in list_]
+def _clean_list(list_, _active=None):
+    return [clean(item, _active) for item in list_]
 
 
-def _clean_dict(dict_):
+def _clean_dict(dict_, _active=None):
     data = {}
     for k, v in dict_.items():
         try:
-            data[k] = clean(v)
+            data[k] = clean(v, _active)
         except TypeError:
             log.warning(
                 'Dictionary values must be serializeable to '
-                'JSON "%s" value %s of type %s is unsupported.',
-                k, v, type(v),
+                'JSON, value of type %s is unsupported.',
+                type(v),
             )
     return data
 

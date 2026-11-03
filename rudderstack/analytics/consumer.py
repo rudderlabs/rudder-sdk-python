@@ -93,7 +93,8 @@ class Consumer(Thread):
                     item, cls=DatetimeSerializer).encode())
                 if item_size > MAX_MSG_SIZE:
                     self.log.error(
-                        'Item exceeds 4mb limit, dropping. (%s)', str(item))
+                        'Item exceeds 4mb limit, dropping. (messageId: %s, size: %d bytes)',
+                        item.get('messageId') if isinstance(item, dict) else None, item_size)
                     continue
                 items.append(item)
                 total_size += item_size
