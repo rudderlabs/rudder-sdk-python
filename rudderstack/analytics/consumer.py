@@ -64,7 +64,7 @@ class Consumer(Thread):
             self.request(batch)
             success = True
         except Exception as e:
-            self.log.error('error uploading: %s', e)
+            self.log.error('upload failed: %s', type(e).__name__)
             success = False
             if self.on_error:
                 self.on_error(e, batch)
@@ -95,6 +95,7 @@ class Consumer(Thread):
                     self.log.error(
                         'Item exceeds 4mb limit, dropping. (messageId: %s, size: %d bytes)',
                         item.get('messageId') if isinstance(item, dict) else None, item_size)
+                    queue.task_done()
                     continue
                 items.append(item)
                 total_size += item_size
@@ -105,7 +106,8 @@ class Consumer(Thread):
             except Empty:
                 break
             except Exception as e:
-                self.log.exception('Exception: %s', e)
+                self.log.error('serialization failed, dropping item: %s', type(e).__name__)
+                queue.task_done()
 
         return items
 
@@ -126,7 +128,8 @@ class Consumer(Thread):
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,
-            giveup=fatal_exception)
+            giveup=fatal_exception,
+            logger=None)
         def send_request():
             post(self.write_key, self.host, gzip=self.gzip,
                  timeout=self.timeout, batch=batch, proxies=self.proxies)

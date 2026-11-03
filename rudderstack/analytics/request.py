@@ -50,9 +50,9 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
         log.debug('data uploaded successfully')
         return res
 
+    log.debug('upload rejected: status %d', res.status_code)
     try:
         payload = res.json()
-        log.debug('received response: %s', payload)
         raise APIError(res.status_code, payload['code'], payload['message'])
     except ValueError:
         raise APIError(res.status_code, 'unknown', res.text)

@@ -339,28 +339,30 @@ class Client(object):
             return self._check_before_enqueue(msg, result)
         except Exception as e:
             # Never raise into the app; the original is untouched because the hook got a copy.
-            # Log the SDK's own reason, or only the class of any other exception: its text may carry event values.
-            reason = str(e) if checking_output and isinstance(e, BeforeEnqueueError) else type(e).__name__
-            if self.before_enqueue_on_error == 'drop':
-                self.log.error('before_enqueue failed, dropping %s event %s: %s',
-                               msg['type'], msg['messageId'], reason)
-                return None
-            self.log.error('before_enqueue failed, sending original %s event %s: %s',
-                           msg['type'], msg['messageId'], reason)
-            return msg
+            # Even validation exceptions may originate in returned data. Never inspect their text.
+            reason = 'invalid_output' if checking_output else 'hook_failed'
+            drop = self.before_enqueue_on_error == 'drop'
+            try:
+                self.log.error('before_enqueue failed, %s %s event %s: %s (%s)',
+                               'dropping' if drop else 'sending original',
+                               msg['type'], msg['messageId'], reason, type(e).__name__)
+            except Exception:
+                # Logging/formatting failures must not defeat the hook error policy.
+                pass
+            return None if drop else msg
 
     def _check_before_enqueue(self, original, msg):
         """Restore reserved fields and re-validate the hook's output; raise if it is not sendable."""
         msg_type = original['type']
         if not isinstance(msg, dict):
-            raise BeforeEnqueueError('before_enqueue must return a dict or None')
+            raise BeforeEnqueueError('invalid_shape')
         if msg.get('type') != msg_type:
-            raise BeforeEnqueueError('before_enqueue must not change the event type')
+            raise BeforeEnqueueError('changed_type')
         if msg.get('context') is None:
             # A copy: the hook may retain its return value. Library is restored below, with a warning.
             msg = dict(msg, context={})
         if not isinstance(msg['context'], dict):
-            raise BeforeEnqueueError('before_enqueue must return a dict context')
+            raise BeforeEnqueueError('invalid_context')
         msg = clean(msg, _active=set())
 
         if msg['context'].get('library') != original['context']['library']:
@@ -377,8 +379,7 @@ class Client(object):
         # Strict wire validation belongs to the hook policy, not the no-hook/fallback path.
         size = len(json.dumps(msg, cls=DatetimeSerializer, allow_nan=False).encode())
         if size > MAX_MSG_SIZE:
-            raise BeforeEnqueueError('before_enqueue returned {0} bytes, over the {1} byte limit'.format(
-                size, MAX_MSG_SIZE))
+            raise BeforeEnqueueError('oversize_output')
         return msg
 
     def _warn_reserved(self, field, original):
@@ -441,7 +442,7 @@ def require_sendable(msg_type, msg):
     checks.append(('integrations', msg.get('integrations'), dict))
     for name, value, data_type in checks:
         if not isinstance(value, data_type):
-            raise BeforeEnqueueError('before_enqueue returned an event without a valid {0}'.format(name))
+            raise BeforeEnqueueError('invalid_required_field')
 
 
 def msg_size(msg):

@@ -84,7 +84,19 @@ analytics.before_enqueue = before_enqueue
 analytics.before_enqueue_on_error = 'drop'
 ```
 
-The same options are available as `Client(..., before_enqueue=..., before_enqueue_on_error=...)`.
+Set module-level `before_enqueue` and `before_enqueue_on_error` before the first module call,
+when the default client is created. Later assignments do not reconfigure that client.
+Creating an explicit `Client` is the safe option when module calls may already have occurred:
+
+```python
+from rudderstack.analytics.client import Client
+
+client = Client(
+    'YOUR_WRITE_KEY', before_enqueue=before_enqueue,
+    before_enqueue_on_error='drop',
+)
+client.identify('user-id', traits={'email': 'ada@example.com', 'plan': 'pro'})
+```
 
 - Returning `None` drops the event, including a hook that ends without a `return`.
 - A dropped event is not an error: `Client` methods return `(True, None)` and `on_error` is not called.

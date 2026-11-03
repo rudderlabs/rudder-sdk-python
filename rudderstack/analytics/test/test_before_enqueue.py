@@ -276,7 +276,7 @@ class TestBeforeEnqueue(unittest.TestCase):
         self.assert_original_sent()
         self.assertEqual(logs.output, [
             'ERROR:rudderstack:before_enqueue failed, sending original '
-            'track event mid: ValueError'])
+            'track event mid: hook_failed (ValueError)'])
 
     def test_hook_error_drop_sends_nothing_and_logs_error(self):
         def hook(msg):
@@ -291,7 +291,7 @@ class TestBeforeEnqueue(unittest.TestCase):
         self.post.assert_not_called()
         self.assertEqual(logs.output, [
             'ERROR:rudderstack:before_enqueue failed, dropping track event mid: '
-            'ValueError'])
+            'hook_failed (ValueError)'])
 
     def test_uncopyable_event_is_hook_error(self):
         hook = mock.Mock(side_effect=identity)
@@ -560,8 +560,7 @@ class TestBeforeEnqueue(unittest.TestCase):
                     self.assert_original_sent()
                 else:
                     self.assertEqual(result, (True, None))
-                self.assertIn('over the {0} byte limit'.format(MAX_MSG_SIZE),
-                              logs.output[0])
+                self.assertIn('invalid_output (BeforeEnqueueError)', logs.output[0])
                 self.assertNotIn('xxxx', logs.output[0])
 
     def test_oversized_original_after_hook_error_gets_usual_handling(self):

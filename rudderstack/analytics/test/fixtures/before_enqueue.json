@@ -1,5 +1,20 @@
 {
   "source": "sdk-architecture/sdks/llds/before-enqueue/fixtures/conformance.json",
+  "applicability_labels": [
+    "cyclic-input-sdks",
+    "messageid-generating-sdks",
+    "mutable-channel-sdks",
+    "mutable-container-sdks",
+    "normalising-sdks",
+    "per-event-size-check-sdks",
+    "process-control-signal-sdks",
+    "removable-messageid-sdks",
+    "runtime-hook-config-sdks",
+    "runtime-policy-config-sdks",
+    "server-side-sdks",
+    "unserialisable-output-sdks",
+    "wrong-shape-result-sdks"
+  ],
   "defaults": {
     "payload_marker": "BE_PAYLOAD_MARKER_5704",
     "clock": {
@@ -9,9 +24,241 @@
     "message_ids": [
       "m1",
       "m2"
-    ]
+    ],
+    "wire_binding": "complete_sdk_baseline: capture the same SDK call without hook under fixed clock, IDs, SDK/runtime versions and consumer; bind all SDK-owned defaults, event shape, endpoint, envelope, timestamps and field order from that complete request. Apply only the specified hook edits and contract restoration to that baseline; compare the entire serialized request, preserving every other field. Neutral body is fully expanded for the fixture profile, not a partial field assertion.",
+    "baseline_profile": {
+      "method": "POST",
+      "path": "/v1/batch",
+      "event": {
+        "type": "track",
+        "userId": "user-1",
+        "event": "Order Completed",
+        "properties": {
+          "marker": "BE_PAYLOAD_MARKER_5704",
+          "total": 42
+        },
+        "context": {
+          "library": {
+            "name": "fixture-sdk",
+            "version": "1.0.0"
+          },
+          "wrapperLibrary": {
+            "name": "fixture-wrapper"
+          }
+        },
+        "channel": "server",
+        "messageId": "m1",
+        "timestamp": "2026-10-23T10:00:00.000Z"
+      },
+      "envelope": {
+        "sentAt": "2026-10-23T10:00:01.000Z"
+      }
+    },
+    "sdk_bindings": {
+      "node": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "absent at hook; event sentAt assigned at flush"
+      },
+      "python": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "absent at hook; batch envelope sentAt assigned by post"
+      },
+      "go": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "provisional event send time equals original timestamp; overwritten at send"
+      },
+      "java": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "event sentAt retained if supplied; batch sentAt assigned at batching"
+      },
+      "dotnet": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "absent from event; batch envelope sentAt assigned at send"
+      },
+      "php": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "absent at hook; queued delivery sets batch sentAt at flush; file delivery adds none"
+      },
+      "ruby": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "event sentAt assigned at parse and retained"
+      },
+      "ruby-sync": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/batch",
+        "size_check": "existing per-event check where this delivery mode has one",
+        "messageId": "generated baseline value",
+        "sentAt": "event sentAt assigned at build and retained"
+      },
+      "rust": {
+        "baseline": "capture complete no-hook HTTP request with fixed SDK version, clock, IDs and runtime metadata",
+        "single_event_endpoint": "/v1/{event_type}",
+        "size_check": "none",
+        "messageId": "absent unless supplied by hook",
+        "sentAt": "event sentAt assigned at parse and retained"
+      }
+    },
+    "comparison": "No hook: unchanged complete baseline request. Pass-through hook and other successes: parsed complete JSON values plus endpoint/method and raw payload-marker checks; key order and duplicate-key quirks may differ for pass-through. Never drop baseline fields to compare.",
+    "caller_results_by_sdk": {
+      "node": {
+        "drop": "same client instance; per-call callback has no arguments"
+      },
+      "python": {
+        "drop": "instance API: (true, null); module helpers: null"
+      },
+      "go": {
+        "drop": "null-equivalent success; no delivery callback"
+      },
+      "java": {
+        "drop": "submission returns normally; capacity-reporting submission returns false"
+      },
+      "dotnet": {
+        "drop": "normal return; submission counter unchanged; no delivery callbacks"
+      },
+      "php": {
+        "drop": "true; delivery error handler not called"
+      },
+      "ruby": {
+        "drop": "true; delivery error handler not called"
+      },
+      "ruby-sync": {
+        "drop": "null-equivalent success; no request or delivery error handler"
+      },
+      "rust": {
+        "drop": "successful result; no request"
+      }
+    },
+    "log_level_bindings": {
+      "node": {
+        "debug": "debug",
+        "warning": "warn",
+        "error": "error"
+      },
+      "python": {
+        "debug": "DEBUG",
+        "warning": "WARNING",
+        "error": "ERROR"
+      },
+      "go": {
+        "debug": "info when verbose logging is enabled",
+        "warning": "info when verbose logging is enabled",
+        "error": "error"
+      },
+      "java": {
+        "debug": "DEBUG",
+        "warning": "ERROR",
+        "error": "ERROR"
+      },
+      "dotnet": {
+        "debug": "DEBUG",
+        "warning": "WARN",
+        "error": "ERROR"
+      },
+      "php": {
+        "debug": "debug-gated error_log",
+        "warning": "always-on WARNING-prefixed error_log",
+        "error": "always-on error_log"
+      },
+      "ruby": {
+        "debug": "debug",
+        "warning": "warn",
+        "error": "error"
+      },
+      "ruby-sync": {
+        "debug": "debug",
+        "warning": "warn",
+        "error": "error"
+      },
+      "rust": {
+        "debug": "debug",
+        "warning": "warn",
+        "error": "error"
+      }
+    }
   },
   "fixtures": [
+    {
+      "id": "enriched_input",
+      "title": "Hook sees enriched input on the caller context",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-001",
+        "SDK-BEFORE-ENQUEUE-003",
+        "SDK-BEFORE-ENQUEUE-032"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        },
+        "hook_input": "complete enriched SDK event; no new generated fields"
+      }
+    },
     {
       "id": "identity_semantically_equal",
       "title": "Identity hook has semantically equal single-event request",
@@ -73,6 +320,1337 @@
       }
     },
     {
+      "id": "no_hook_unchanged",
+      "title": "Absent hook keeps existing delivery behavior",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-002",
+        "SDK-BEFORE-ENQUEUE-003",
+        "SDK-BEFORE-ENQUEUE-024"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "not_configured"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 0,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        },
+        "compare_to_no_hook": "byte_identical_complete_request"
+      }
+    },
+    {
+      "id": "edit_reaches_wire",
+      "title": "Property edit reaches complete request",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-001",
+        "SDK-BEFORE-ENQUEUE-007"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "set": {
+            "properties.total": 99
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":99},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        }
+      }
+    },
+    {
+      "id": "null_drop_accepted",
+      "title": "Null drop returns accepted and never sends",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-005",
+        "SDK-BEFORE-ENQUEUE-018",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_null"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "accepted",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "debug",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        }
+      }
+    },
+    {
+      "id": "throw_send_original",
+      "title": "Throw with default send delivers original",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-019",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022",
+        "SDK-BEFORE-ENQUEUE-026"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "throw",
+          "message": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "throw_drop_none",
+      "title": "Throw with drop sends nothing",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-019",
+        "SDK-BEFORE-ENQUEUE-021",
+        "SDK-BEFORE-ENQUEUE-022",
+        "SDK-BEFORE-ENQUEUE-026"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "throw",
+          "message": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "drop",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "accepted",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "mutate_then_throw_isolated",
+      "title": "Mutate then throw leaves original and caller untouched",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-003",
+        "SDK-BEFORE-ENQUEUE-020"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "mutate_then_throw",
+          "set": {
+            "properties.total": 99,
+            "context.wrapperLibrary.name": "BE_PAYLOAD_MARKER_5704"
+          },
+          "message": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        },
+        "caller_input_unchanged": true
+      }
+    },
+    {
+      "id": "wrong_shape_hook_error",
+      "title": "Wrong-shaped output follows hook policy",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-005",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "wrong-shape-result-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_wrong_shape",
+          "value": 42
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "type_change_hook_error",
+      "title": "Changed type sends original to original endpoint",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-006",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-025"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_type",
+          "value": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "restore_messageid",
+      "title": "Restore changed messageId",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-008",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "messageid-generating-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "messageId",
+          "value": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "messageId"
+          ]
+        },
+        "typed_self_restoration": "no warning when unreachable or self-restored; same complete request"
+      }
+    },
+    {
+      "id": "restore_removed_messageid",
+      "title": "Restore removed messageId",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-008",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "removable-messageid-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "messageId",
+          "operation": "remove"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "messageId"
+          ]
+        },
+        "typed_self_restoration": "unrepresentable removal is statically excluded; same complete request"
+      }
+    },
+    {
+      "id": "restore_context_library",
+      "title": "Restore changed context.library",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-009",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "context.library",
+          "value": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "context.library"
+          ]
+        },
+        "typed_self_restoration": "no warning when unreachable or self-restored; same complete request"
+      }
+    },
+    {
+      "id": "restore_removed_context_library",
+      "title": "Restore removed context.library",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-009",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "context.library",
+          "operation": "remove"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "context.library"
+          ]
+        },
+        "typed_self_restoration": "unrepresentable removal is statically excluded; same complete request"
+      }
+    },
+    {
+      "id": "restore_channel",
+      "title": "Restore changed channel",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-010",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "channel",
+          "value": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "channel"
+          ]
+        },
+        "typed_self_restoration": "no warning when unreachable or self-restored; same complete request"
+      }
+    },
+    {
+      "id": "restore_removed_channel",
+      "title": "Restore removed channel",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-010",
+        "SDK-BEFORE-ENQUEUE-027"
+      ],
+      "applicability": [
+        "mutable-channel-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "change_reserved_field",
+          "field": "channel",
+          "operation": "remove"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "channel"
+          ]
+        },
+        "typed_self_restoration": "unrepresentable removal is statically excluded; same complete request"
+      }
+    },
+    {
+      "id": "removed_context_recreated",
+      "title": "Removed context is recreated with library",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-009",
+        "SDK-BEFORE-ENQUEUE-011"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "remove_context"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "context.library"
+          ]
+        },
+        "typed_self_restoration": "Java builder restores context.library without warning"
+      }
+    },
+    {
+      "id": "identity_fields_revalidated",
+      "title": "Removing identity is a hook error",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-012",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "remove": [
+            "userId",
+            "anonymousId"
+          ]
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "required_track_field",
+      "title": "Revalidate track event",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-013",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "remove": [
+            "event"
+          ]
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "required_group_field",
+      "title": "Revalidate group groupId",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-013",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "group",
+          "fields": {
+            "userId": "user-1",
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z",
+            "groupId": "required-value",
+            "properties": {},
+            "traits": {
+              "marker": "BE_PAYLOAD_MARKER_5704"
+            }
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "remove": [
+            "groupId"
+          ]
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"group\",\"userId\":\"user-1\",\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\",\"groupId\":\"required-value\",\"properties\":{},\"traits\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\"}}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "required_alias_field",
+      "title": "Revalidate alias previousId",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-013",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "alias",
+          "fields": {
+            "userId": "user-2",
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z",
+            "previousId": "required-value",
+            "properties": {},
+            "traits": {}
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "remove": [
+            "previousId"
+          ]
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"alias\",\"userId\":\"user-2\",\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\",\"previousId\":\"required-value\",\"properties\":{},\"traits\":{}}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "post_hook_oversize",
+      "title": "Oversize restored output is a hook error",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-016",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "per-event-size-check-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_oversize",
+          "field": "properties.blob",
+          "value": {
+            "repeat": "BE_PAYLOAD_MARKER_5704",
+            "until": "above existing SDK per-event threshold"
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "post_hook_oversize_drop",
+      "title": "Oversize under drop sends nothing",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-016",
+        "SDK-BEFORE-ENQUEUE-021",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "per-event-size-check-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_oversize",
+          "field": "properties.blob",
+          "value": {
+            "repeat": "BE_PAYLOAD_MARKER_5704",
+            "until": "above existing SDK per-event threshold"
+          }
+        },
+        "policy": "drop",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "accepted",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
       "id": "unserialisable_output",
       "title": "Unencodable output is a hook error",
       "minimum": true,
@@ -115,6 +1693,70 @@
             "properties.bad": {
               "non_json": "encoder-rejected value carrying BE_PAYLOAD_MARKER_5704"
             }
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "container_type_violation",
+      "title": "Non-container context is a hook error",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-015",
+        "SDK-BEFORE-ENQUEUE-020",
+        "SDK-BEFORE-ENQUEUE-022"
+      ],
+      "applicability": [
+        "mutable-container-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "set": {
+            "context": "BE_PAYLOAD_MARKER_5704"
           }
         },
         "policy": "send",
@@ -265,6 +1907,705 @@
           "payload_marker_absent_at_all_levels": true,
           "exception_text_absent": true,
           "reason_source": "fixed_sdk_string"
+        }
+      }
+    },
+    {
+      "id": "retained_result_distinct_ids",
+      "title": "Retained result remains unchanged and events keep IDs",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-007",
+        "SDK-BEFORE-ENQUEUE-008"
+      ],
+      "applicability": [
+        "messageid-generating-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "return_retained_object",
+          "retain_first_result": true
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "calls": [
+          {
+            "type": "track",
+            "fields": {
+              "userId": "user-1",
+              "event": "Order Completed",
+              "properties": {
+                "marker": "BE_PAYLOAD_MARKER_5704",
+                "total": 42
+              },
+              "context": {
+                "library": {
+                  "name": "fixture-sdk",
+                  "version": "1.0.0"
+                },
+                "wrapperLibrary": {
+                  "name": "fixture-wrapper"
+                }
+              },
+              "channel": "server",
+              "messageId": "m1",
+              "timestamp": "2026-10-23T10:00:00.000Z"
+            }
+          },
+          {
+            "type": "track",
+            "fields": {
+              "userId": "user-1",
+              "event": "Order Completed",
+              "properties": {
+                "marker": "BE_PAYLOAD_MARKER_5704",
+                "total": 42
+              },
+              "context": {
+                "library": {
+                  "name": "fixture-sdk",
+                  "version": "1.0.0"
+                },
+                "wrapperLibrary": {
+                  "name": "fixture-wrapper"
+                }
+              },
+              "channel": "server",
+              "messageId": "m2",
+              "timestamp": "2026-10-23T10:00:00.000Z"
+            }
+          }
+        ],
+        "delivery": "Issue exactly the two calls in calls (call is their template), then drain delivery. Queued SDKs may group them; synchronous modes may send one request per call."
+      },
+      "expected": {
+        "serialized_request": [
+          {
+            "method": "POST",
+            "path": "/v1/batch",
+            "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"},{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m2\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+            "binding": "complete_sdk_baseline_request_sequence"
+          }
+        ],
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 2,
+        "logs": {
+          "level": "warning",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "restored_fields": [
+            "messageId"
+          ]
+        },
+        "retained_object_unchanged": true,
+        "serialized_message_ids": [
+          "m1",
+          "m2"
+        ],
+        "request_sequence": "Compare every complete request and endpoint against the SDK baseline for these two calls. Concatenate their events in delivery order: exactly the two events in the neutral body, with messageIds m1 and m2 respectively; request grouping follows the SDK delivery mode."
+      }
+    },
+    {
+      "id": "once_across_retries",
+      "title": "Retry requests reuse post-hook data",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-001",
+        "SDK-BEFORE-ENQUEUE-031"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "set": {
+            "properties.total": 99
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "delivery_responses": [
+          503,
+          200
+        ]
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":99},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        },
+        "request_count": 2,
+        "every_attempt": "complete expected request; existing sentAt refresh rules only"
+      }
+    },
+    {
+      "id": "no_payload_in_logs",
+      "title": "No payload marker in logs with or without hook",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-024",
+        "SDK-BEFORE-ENQUEUE-025"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "logging": "capture every SDK level; also repeat without hook"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        }
+      }
+    },
+    {
+      "id": "exception_text_not_logged",
+      "title": "Hook exception text never enters logs",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-024",
+        "SDK-BEFORE-ENQUEUE-025",
+        "SDK-BEFORE-ENQUEUE-026"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "throw",
+          "message": "BE_PAYLOAD_MARKER_5704",
+          "writable_error_name": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        }
+      }
+    },
+    {
+      "id": "invalid_hook_config",
+      "title": "Non-callable hook fails before construction completes",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-023"
+      ],
+      "applicability": [
+        "runtime-hook-config-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "invalid_config",
+          "hook_value": "BE_PAYLOAD_MARKER_5704"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "configuration_error",
+        "error_handler_called": false,
+        "hook_calls": 0,
+        "logs": {
+          "level": "SDK configuration mechanism",
+          "payload_marker_absent_at_all_levels": true
+        },
+        "construction": "fails_before_event_processing"
+      }
+    },
+    {
+      "id": "invalid_policy_config",
+      "title": "Unknown policy fails before event processing",
+      "minimum": true,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-023"
+      ],
+      "applicability": [
+        "runtime-policy-config-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "invalid_config"
+        },
+        "policy": "invalid",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "configuration_error",
+        "error_handler_called": false,
+        "hook_calls": 0,
+        "logs": {
+          "level": "SDK configuration mechanism",
+          "payload_marker_absent_at_all_levels": true
+        },
+        "construction": "fails at construction or Java setter before build"
+      }
+    },
+    {
+      "id": "process_control_propagates",
+      "title": "Process-control errors propagate",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-019"
+      ],
+      "applicability": [
+        "process-control-signal-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "throw_process_control_signal",
+          "message": "marker-free signal"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "process_control_signal",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true
+        }
+      }
+    },
+    {
+      "id": "original_oversize_usual_handling",
+      "title": "Oversized original keeps existing downstream behavior",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-016",
+        "SDK-BEFORE-ENQUEUE-017",
+        "SDK-BEFORE-ENQUEUE-020"
+      ],
+      "applicability": [
+        "per-event-size-check-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "throw",
+          "message": "marker-free error"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704",
+        "original_size": "above existing per-event threshold",
+        "original_expansion": {
+          "path": "properties.blob",
+          "repeat": "BE_PAYLOAD_MARKER_5704",
+          "until": "Choose the smallest positive repetition count N for which the complete enriched original exceeds the existing SDK size measure and threshold; fix N for both baseline and hooked runs."
+        }
+      },
+      "expected": {
+        "serialized_request": "none",
+        "caller_result": "same_as_no_hook",
+        "error_handler_called": "same_as_no_hook_for_downstream_size_failure",
+        "hook_calls": 1,
+        "logs": {
+          "level": "error",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string",
+          "error_identity": "safe error class or panic value type only; no message/stack/writable name"
+        },
+        "serialized_request_by_sdk": {
+          "node": {
+            "method": "POST",
+            "path": "/v1/batch",
+            "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42,\"blob\":{\"expand\":\"original_expansion\",\"value\":\"repeat * N\"}},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+            "binding": "complete_oversized_sdk_baseline",
+            "body_expansions": {
+              "batch[0].properties.blob": "Replace this expansion descriptor with the exact string input.original_expansion.repeat repeated N times, using the same N selected for the original. No other field is omitted; then serialize and bind the complete oversized SDK baseline."
+            }
+          },
+          "python": "none",
+          "go": "none",
+          "java": "none",
+          "dotnet": "none",
+          "php": "none",
+          "ruby": "none",
+          "ruby-sync": "none"
+        },
+        "caller_result_by_sdk": {
+          "node": "accepted",
+          "python": "existing_oversize_error",
+          "go": "accepted",
+          "java": "normal_return",
+          "dotnet": "normal_return",
+          "php": "false",
+          "ruby": "accepted",
+          "ruby-sync": "existing_oversize_error"
+        },
+        "error_handler_called_by_sdk": {
+          "node": false,
+          "python": false,
+          "go": true,
+          "java": false,
+          "dotnet": false,
+          "php": false,
+          "ruby": false,
+          "ruby-sync": false
+        }
+      }
+    },
+    {
+      "id": "output_normalisation",
+      "title": "Existing cleanup/coercion applies to hook output",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-033"
+      ],
+      "applicability": [
+        "normalising-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "edit",
+          "set": {
+            "userId": 42
+          }
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"42\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        }
+      }
+    },
+    {
+      "id": "sent_at_ownership",
+      "title": "Hook retains existing SDK sentAt ownership",
+      "minimum": false,
+      "requirements": [
+        "SDK-BEFORE-ENQUEUE-032"
+      ],
+      "applicability": [
+        "server-side-sdks"
+      ],
+      "input": {
+        "call": {
+          "type": "track",
+          "fields": {
+            "userId": "user-1",
+            "event": "Order Completed",
+            "properties": {
+              "marker": "BE_PAYLOAD_MARKER_5704",
+              "total": 42
+            },
+            "context": {
+              "library": {
+                "name": "fixture-sdk",
+                "version": "1.0.0"
+              },
+              "wrapperLibrary": {
+                "name": "fixture-wrapper"
+              }
+            },
+            "channel": "server",
+            "messageId": "m1",
+            "timestamp": "2026-10-23T10:00:00.000Z"
+          }
+        },
+        "hook": {
+          "behavior": "identity"
+        },
+        "policy": "send",
+        "payload_marker": "BE_PAYLOAD_MARKER_5704"
+      },
+      "expected": {
+        "serialized_request": {
+          "method": "POST",
+          "path": "/v1/batch",
+          "body": "{\"batch\":[{\"type\":\"track\",\"userId\":\"user-1\",\"event\":\"Order Completed\",\"properties\":{\"marker\":\"BE_PAYLOAD_MARKER_5704\",\"total\":42},\"context\":{\"library\":{\"name\":\"fixture-sdk\",\"version\":\"1.0.0\"},\"wrapperLibrary\":{\"name\":\"fixture-wrapper\"}},\"channel\":\"server\",\"messageId\":\"m1\",\"timestamp\":\"2026-10-23T10:00:00.000Z\"}],\"sentAt\":\"2026-10-23T10:00:01.000Z\"}",
+          "binding": "complete_sdk_baseline"
+        },
+        "caller_result": "normal_return",
+        "error_handler_called": false,
+        "hook_calls": 1,
+        "logs": {
+          "level": "none",
+          "payload_marker_absent_at_all_levels": true,
+          "exception_text_absent": true,
+          "reason_source": "fixed_sdk_string"
+        },
+        "sentAt_by_sdk": {
+          "node": "absent at hook; event sentAt assigned at flush",
+          "python": "absent at hook; batch envelope sentAt assigned by post",
+          "go": "provisional event send time equals original timestamp; overwritten at send",
+          "java": "event sentAt retained if supplied; batch sentAt assigned at batching",
+          "dotnet": "absent from event; batch envelope sentAt assigned at send",
+          "php": "absent at hook; queued delivery sets batch sentAt at flush; file delivery adds none",
+          "ruby": "event sentAt assigned at parse and retained",
+          "ruby-sync": "event sentAt assigned at build and retained",
+          "rust": "event sentAt assigned at parse and retained"
         }
       }
     }
