@@ -370,7 +370,7 @@ class Client(object):
                 self.log.debug('before_enqueue dropped %s event %s.', msg['type'], msg['messageId'])
                 return None
             require('before_enqueue result (dict or None)', result, dict)
-            self._validate_before_enqueue(result, msg_type=msg['type'])
+            self._validate_before_enqueue(result)
             library = {'name': 'analytics-python', 'version': VERSION}
             context = result.setdefault('context', {})
             if result.get('channel') != CHANNEL or context.get('library') != library:
