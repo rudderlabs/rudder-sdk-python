@@ -21,10 +21,6 @@ CHANNEL = 'server'
 BEFORE_ENQUEUE_ON_ERROR = ('send', 'drop')
 
 
-class _MessageTooBig(RuntimeError):
-    """Separate the normal size error from hook and serialization failures."""
-
-
 class Client(object):
     class DefaultConfig(object):
         write_key = None
@@ -363,9 +359,8 @@ class Client(object):
         require('type', msg.get('type'), str)
         require('timestamp', msg.get('timestamp'), (str, datetime))
         require('context', msg.get('context', {}), dict)
-        msg_size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
-        if msg_size > MAX_MSG_SIZE:
-            raise _MessageTooBig(f'Message exceeds {str(int(MAX_MSG_SIZE / 1024))}kb limit. ({str(msg)})')
+        # Serialization errors are validation failures; _enqueue's size check handles oversize
+        json.dumps(msg, cls=DatetimeSerializer)
 
     def _run_before_enqueue(self, msg):
         """Run the hook on a deep copy; return its event, the original, or None."""
@@ -385,8 +380,6 @@ class Client(object):
             if not result.get('messageId'):
                 result['messageId'] = msg['messageId']
             return result
-        except _MessageTooBig as error:
-            raise RuntimeError(str(error)) from None
         except Exception as error:
             drop = self.before_enqueue_on_error == 'drop'
             self.log.error('before_enqueue failed for %s event %s, %s. %s',
@@ -394,10 +387,7 @@ class Client(object):
                            'dropping the event' if drop else 'sending the original event', error)
             if drop:
                 return None
-            try:
-                self._validate_before_enqueue(msg)
-            except _MessageTooBig as error:
-                raise RuntimeError(str(error)) from None
+            self._validate_before_enqueue(msg)
             return msg
 
     def flush(self):
