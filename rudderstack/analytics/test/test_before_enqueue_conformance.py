@@ -2,7 +2,7 @@
 
 All fixtures apply in Python. Callback success maps to (True, None); Python
 uses its existing 4 MB limit rather than Node's 32 KB. Python supports cycles.
-post_hook_oversize_warns maps to the usual RuntimeError, as without a hook;
+post_hook_oversize_normal_handling maps to the usual RuntimeError, as without a hook;
 oversize is not a hook error and nothing is sent.
 """
 import copy
@@ -52,7 +52,7 @@ def test_conformance(fixture, wire, caplog):
             event['messageId'] = 'm2'
         if fixture_id == 'restore_removed_messageid':
             del event['messageId']
-        if fixture_id == 'post_hook_oversize_warns':
+        if fixture_id == 'post_hook_oversize_normal_handling':
             event['properties']['blob'] = 'x' * MAX_MSG_SIZE
         if fixture_id == 'cyclic_output_hook_error':
             event['properties']['cycle'] = event
@@ -74,7 +74,7 @@ def test_conformance(fixture, wire, caplog):
         client = Client('test-key', host='http://localhost', gzip=False, before_enqueue=hook,
                         upload_interval=0.01, max_retries=1, **options)
     caplog.clear()
-    if fixture_id == 'post_hook_oversize_warns':
+    if fixture_id == 'post_hook_oversize_normal_handling':
         with pytest.raises(RuntimeError, match=r'^Message exceeds 4096kb limit\.'):
             track(client)
         wire.assert_not_called()

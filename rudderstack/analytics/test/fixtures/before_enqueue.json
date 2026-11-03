@@ -70,7 +70,7 @@
     "outcome": "send"
   },
   {
-    "id": "post_hook_oversize_warns",
+    "id": "post_hook_oversize_normal_handling",
     "policy": "send",
     "outcome": "send"
   },
