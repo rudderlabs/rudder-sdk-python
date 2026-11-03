@@ -64,7 +64,7 @@ class Consumer(Thread):
             self.request(batch)
             success = True
         except Exception as e:
-            self.log.error('upload failed: %s', type(e).__name__)
+            self.log.error('error uploading: %s', e)
             success = False
             if self.on_error:
                 self.on_error(e, batch)
@@ -91,12 +91,6 @@ class Consumer(Thread):
                     block=True, timeout=self.upload_interval - elapsed)
                 item_size = len(json.dumps(
                     item, cls=DatetimeSerializer).encode())
-                if item_size > MAX_MSG_SIZE:
-                    self.log.error(
-                        'Item exceeds 4mb limit, dropping. (messageId: %s, size: %d bytes)',
-                        item.get('messageId') if isinstance(item, dict) else None, item_size)
-                    queue.task_done()
-                    continue
                 items.append(item)
                 total_size += item_size
                 if total_size >= BATCH_SIZE_LIMIT:
@@ -106,8 +100,7 @@ class Consumer(Thread):
             except Empty:
                 break
             except Exception as e:
-                self.log.error('serialization failed, dropping item: %s', type(e).__name__)
-                queue.task_done()
+                self.log.exception('Exception: %s', e)
 
         return items
 
@@ -128,8 +121,7 @@ class Consumer(Thread):
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,
-            giveup=fatal_exception,
-            logger=None)
+            giveup=fatal_exception)
         def send_request():
             post(self.write_key, self.host, gzip=self.gzip,
                  timeout=self.timeout, batch=batch, proxies=self.proxies)

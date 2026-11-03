@@ -36,13 +36,13 @@ class TestConsumer(unittest.TestCase):
         next = consumer.next()
         self.assertEqual(next, list(range(upload_size)))
 
-    def test_dropping_oversize_msg(self):
+    def test_sending_oversize_msg(self):
         q = Queue()
         consumer = Consumer(q, '')
         oversize_msg = {'m': 'x' * MAX_MSG_SIZE}
         q.put(oversize_msg)
         next = consumer.next()
-        self.assertEqual(next, [])
+        self.assertEqual(next, [oversize_msg])
         self.assertTrue(q.empty())
 
     @mock.patch('rudderstack.analytics.consumer.post')

@@ -21,7 +21,7 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
     url = remove_trailing_slash(host or 'https://api.rudderstack.com') + '/v1/batch'
     auth = HTTPBasicAuth(write_key, '')
     data = json.dumps(body, cls=DatetimeSerializer)
-    log.debug('making request: %d events, %d bytes', len(body.get('batch', [])), len(data))
+    log.debug('making request: %s', data)
     headers = {
         'Content-Type': 'application/json',
         'User-Agent': 'analytics-python/' + VERSION
@@ -50,9 +50,9 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
         log.debug('data uploaded successfully')
         return res
 
-    log.debug('upload rejected: status %d', res.status_code)
     try:
         payload = res.json()
+        log.debug('received response: %s', payload)
         raise APIError(res.status_code, payload['code'], payload['message'])
     except ValueError:
         raise APIError(res.status_code, 'unknown', res.text)

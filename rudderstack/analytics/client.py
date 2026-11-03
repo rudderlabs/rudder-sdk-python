@@ -21,10 +21,6 @@ CHANNEL = 'server'
 BEFORE_ENQUEUE_ON_ERROR = ('send', 'drop')
 
 
-class BeforeEnqueueError(Exception):
-    """The SDK rejected `before_enqueue` output; the message never contains event values."""
-
-
 class Client(object):
     class DefaultConfig(object):
         write_key = None
@@ -122,10 +118,9 @@ class Client(object):
         traits = traits or {}
         context = context or {}
         # putting traits inside context
-        context['traits'] = traits
+        if isinstance(context, dict):
+            context['traits'] = traits
         integrations = integrations or {}
-        require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
-        require('traits', traits, dict)
 
         msg = {
             'integrations': integrations,
@@ -138,6 +133,7 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
 
     def track(self, user_id=None, event=None, properties=None, context=None,
@@ -146,9 +142,6 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
-        require('properties', properties, dict)
-        require('event', event, str)
 
         msg = {
             'integrations': integrations,
@@ -162,14 +155,13 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
 
     def alias(self, previous_id=None, user_id=None, context=None,
               timestamp=None, integrations=None, message_id=None):
         context = context or {}
         integrations = integrations or {}
-        require('previous_id', previous_id, ID_TYPES)
-        require('user_id', user_id, ID_TYPES)
 
         msg = {
             'integrations': integrations,
@@ -181,6 +173,7 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
 
     def group(self, user_id=None, group_id=None, traits=None, context=None,
@@ -189,9 +182,6 @@ class Client(object):
         traits = traits or {}
         context = context or {}
         integrations = integrations or {}
-        require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
-        require('group_id', group_id, ID_TYPES)
-        require('traits', traits, dict)
 
         msg = {
             'integrations': integrations,
@@ -205,6 +195,7 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
 
     def page(self, user_id=None, category=None, name=None, properties=None,
@@ -213,13 +204,6 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
-        require('properties', properties, dict)
-
-        if name:
-            require('name', name, str)
-        if category:
-            require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -234,6 +218,7 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
 
     def screen(self, user_id=None, category=None, name=None, properties=None,
@@ -242,13 +227,6 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
-        require('properties', properties, dict)
-
-        if name:
-            require('name', name, str)
-        if category:
-            require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -263,6 +241,7 @@ class Client(object):
             'messageId': message_id,
         }
 
+        self._validate(msg)
         return self._enqueue(msg)
     
     def _enqueue(self, msg):
@@ -278,33 +257,34 @@ class Client(object):
         if msg['integrations'] == {} :
             msg['integrations'] = {"All" : True}
             
-        require('integrations', msg['integrations'], dict)
-        require('type', msg['type'], str)
-        require('timestamp', timestamp, datetime)
-        require('context', msg['context'], dict)
+        if self.before_enqueue is None:
+            require('integrations', msg['integrations'], dict)
+            require('type', msg['type'], str)
+            require('timestamp', timestamp, datetime)
+            require('context', msg['context'], dict)
 
         # add common
-        timestamp = guess_timezone(timestamp)
-        msg['timestamp'] = timestamp.isoformat()
+        if isinstance(timestamp, datetime):
+            timestamp = guess_timezone(timestamp)
+            timestamp = timestamp.isoformat()
+        msg['timestamp'] = timestamp
         msg['messageId'] = stringify_id(message_id)
-        msg['context']['library'] = {
-            'name': 'analytics-python',
-            'version': VERSION
-        }
+        if isinstance(msg['context'], dict):
+            msg['context']['library'] = {
+                'name': 'analytics-python',
+                'version': VERSION
+            }
         msg['userId'] = stringify_id(msg.get('userId', None))
         msg['anonymousId'] = stringify_id(msg.get('anonymousId', None))
         msg['channel'] = CHANNEL
         msg = clean(msg)
-        msg = self._run_before_enqueue(msg)
-        if msg is None:
-            return True, None
-        self.log.debug('queueing %s event %s.', msg['type'], msg.get('messageId'))
-
-        # Check message size.
-        size = msg_size(msg)
-        if size > MAX_MSG_SIZE:
-            raise RuntimeError(f'Message exceeds {str(int(MAX_MSG_SIZE / 1024))}kb limit. '
-                               f'(messageId: {msg.get("messageId")}, size: {size} bytes)')
+        if self.before_enqueue is not None:
+            msg = self._run_before_enqueue(msg)
+            if msg is None:
+                return True, None
+        else:
+            self._validate(msg, enriched=True)
+        self.log.debug('queueing: %s', msg)
 
         # if send is False, return msg as if it was successfully queued
         if not self.send:
@@ -325,66 +305,66 @@ class Client(object):
             self.log.warning('analytics-python queue is full')
             return False, msg
 
+    def _validate(self, msg, enriched=False, msg_type=None):
+        """Use the call's field rules, and measure enriched events before enqueueing."""
+        if self.before_enqueue is not None and not enriched:
+            return
+        msg_type = msg_type or msg['type']
+        if msg_type == 'alias':
+            require('previous_id', msg.get('previousId'), ID_TYPES)
+            require('user_id', msg.get('userId'), ID_TYPES)
+        else:
+            require('user_id or anonymous_id', msg.get('userId') or msg.get('anonymousId'), ID_TYPES)
+        fields = {
+            'track': [('properties', msg.get('properties', {}), dict), ('event', msg.get('event'), str)],
+            'group': [('group_id', msg.get('groupId'), ID_TYPES), ('traits', msg.get('traits', {}), dict)],
+            'identify': [('traits', msg.get('context', {}).get('traits', {}), dict)]
+                        if msg_type == 'identify' else [],
+            'page': [('properties', msg.get('properties', {}), dict)],
+            'screen': [('properties', msg.get('properties', {}), dict)],
+        }
+        for name, value, data_type in fields.get(msg_type, []):
+            require(name, value, data_type)
+        if msg_type in ('page', 'screen'):
+            for field in ('name', 'category'):
+                if msg.get(field):
+                    require(field, msg[field], str)
+        if enriched:
+            require('integrations', msg.get('integrations', {}), dict)
+            require('type', msg.get('type'), str)
+            require('timestamp', msg.get('timestamp'), (str, datetime))
+            require('context', msg.get('context', {}), dict)
+            size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
+            if size > MAX_MSG_SIZE:
+                self.log.warning('Message exceeds %skb limit. (%s)', int(MAX_MSG_SIZE / 1024), msg)
+
     def _run_before_enqueue(self, msg):
-        """Run `before_enqueue` on a copy of `msg`; return the event to send, or None to drop."""
-        if self.before_enqueue is None:
-            return msg
-        checking_output = False
+        """Run the hook on a deep copy; return its event, the original, or None."""
         try:
             result = self.before_enqueue(copy.deepcopy(msg))
             if result is None:
                 self.log.debug('before_enqueue dropped %s event %s.', msg['type'], msg['messageId'])
                 return None
-            checking_output = True
-            return self._check_before_enqueue(msg, result)
-        except Exception as e:
-            # Never raise into the app; the original is untouched because the hook got a copy.
-            # Even validation exceptions may originate in returned data. Never inspect their text.
-            reason = 'invalid_output' if checking_output else 'hook_failed'
+            require('before_enqueue result (dict or None)', result, dict)
+            self._validate(result, enriched=True, msg_type=msg['type'])
+            library = {'name': 'analytics-python', 'version': VERSION}
+            context = result.setdefault('context', {})
+            if result.get('channel') != CHANNEL or context.get('library') != library:
+                self.log.warning('before_enqueue changed channel or context.library; they were restored.')
+            result['channel'] = CHANNEL
+            context['library'] = library
+            if not result.get('messageId'):
+                result['messageId'] = msg['messageId']
+            return result
+        except Exception as error:
             drop = self.before_enqueue_on_error == 'drop'
-            try:
-                self.log.error('before_enqueue failed, %s %s event %s: %s (%s)',
-                               'dropping' if drop else 'sending original',
-                               msg['type'], msg['messageId'], reason, type(e).__name__)
-            except Exception:
-                # Logging/formatting failures must not defeat the hook error policy.
-                pass
-            return None if drop else msg
-
-    def _check_before_enqueue(self, original, msg):
-        """Restore reserved fields and re-validate the hook's output; raise if it is not sendable."""
-        msg_type = original['type']
-        if not isinstance(msg, dict):
-            raise BeforeEnqueueError('invalid_shape')
-        if msg.get('type') != msg_type:
-            raise BeforeEnqueueError('changed_type')
-        if msg.get('context') is None:
-            # A copy: the hook may retain its return value. Library is restored below, with a warning.
-            msg = dict(msg, context={})
-        if not isinstance(msg['context'], dict):
-            raise BeforeEnqueueError('invalid_context')
-        msg = clean(msg, _active=set())
-
-        if msg['context'].get('library') != original['context']['library']:
-            self._warn_reserved('context.library', original)
-            msg['context']['library'] = copy.deepcopy(original['context']['library'])
-        for field in ('channel', 'messageId'):
-            if msg.get(field) != original[field]:
-                self._warn_reserved(field, original)
-                msg[field] = original[field]
-
-        require_sendable(msg_type, msg)
-        msg['userId'] = stringify_id(msg.get('userId'))
-        msg['anonymousId'] = stringify_id(msg.get('anonymousId'))
-        # Strict wire validation belongs to the hook policy, not the no-hook/fallback path.
-        size = len(json.dumps(msg, cls=DatetimeSerializer, allow_nan=False).encode())
-        if size > MAX_MSG_SIZE:
-            raise BeforeEnqueueError('oversize_output')
-        return msg
-
-    def _warn_reserved(self, field, original):
-        self.log.warning('before_enqueue changed %s on %s event %s; restoring the pre-hook value.',
-                         field, original['type'], original['messageId'])
+            self.log.error('before_enqueue failed for %s event %s, %s. %s',
+                           msg['type'], msg['messageId'],
+                           'dropping the event' if drop else 'sending the original event', error)
+            if drop:
+                return None
+            self._validate(msg, enriched=True)
+            return msg
 
     def flush(self):
         """Forces a flush from the internal queue to the server"""
@@ -417,37 +397,6 @@ def require(name, field, data_type):
     if not isinstance(field, data_type):
         msg = '{0} must have {1}, got: {2}'.format(name, data_type, field)
         raise AssertionError(msg)
-
-
-def require_sendable(msg_type, msg):
-    """Apply the public methods' required-field rules to a hook's output, without echoing values."""
-    if msg_type == 'alias':
-        checks = [('previousId', msg.get('previousId'), ID_TYPES),
-                  ('userId', msg.get('userId'), ID_TYPES)]
-    else:
-        checks = [('userId or anonymousId',
-                   msg.get('userId') or msg.get('anonymousId'), ID_TYPES)]
-    if msg_type == 'track':
-        checks.append(('event', msg.get('event'), str))
-    if msg_type == 'group':
-        checks.append(('groupId', msg.get('groupId'), ID_TYPES))
-        checks.append(('traits', msg.get('traits'), dict))
-    if msg_type == 'identify':
-        checks.append(('context.traits', msg['context'].get('traits'), dict))
-    if msg_type in ('track', 'page', 'screen'):
-        checks.append(('properties', msg.get('properties'), dict))
-    if msg_type in ('page', 'screen'):
-        # Optional, as in page()/screen(): checked only when set.
-        checks.extend((name, msg.get(name), str) for name in ('name', 'category') if msg.get(name))
-    checks.append(('integrations', msg.get('integrations'), dict))
-    for name, value, data_type in checks:
-        if not isinstance(value, data_type):
-            raise BeforeEnqueueError('invalid_required_field')
-
-
-def msg_size(msg):
-    """Serialized size of `msg` in bytes."""
-    return len(json.dumps(msg, cls=DatetimeSerializer).encode())
 
 
 def stringify_id(val):

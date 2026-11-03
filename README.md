@@ -99,21 +99,28 @@ client.identify('user-id', traits={'email': 'ada@example.com', 'plan': 'pro'})
 ```
 
 - Returning `None` drops the event, including a hook that ends without a `return`.
-- A dropped event is not an error: `Client` methods return `(True, None)` and `on_error` is not called.
-- If the hook raises an `Exception`, returns something other than a dict or `None`,
-  changes the event `type`, removes a required field (`userId` or `anonymousId`,
-  `event` on track, `groupId` on group, `previousId` and `userId` on alias), or
-  returns unencodable data (including `NaN` or infinity), or grows the event past
-  the 4 MB limit, the SDK logs an error and, by default
-  (`'send'`), sends the original event. Set `before_enqueue_on_error = 'drop'`
-  to drop it instead. The error is never raised to your app.
-- Changes to `context.library`, `channel` and `messageId` are reverted with a warning.
-- The hook must be thread-safe if you call the SDK from several threads.
+  `Client` methods return `(True, None)` and `on_error` is not called.
+- With a hook configured, validation waits until the hook returns, so the hook
+  can fix an invalid call. The returned dict uses the call's normal field and
+  serialization validation. Events over Python's 4 MB limit warn and are sent,
+  just as without a hook; oversize is not a hook error.
+- If the hook raises an `Exception`, returns something other than a dict or
+  `None`, or fails validation (including cyclic data), the SDK logs the error
+  as thrown. The default `before_enqueue_on_error='send'` validates and sends
+  the original event; `'drop'` drops it. Hook errors never call `on_error`.
+  If the original is also invalid under `'send'`, its validation error surfaces
+  as it would without a hook.
+- `channel` and `context.library` are restored with one warning if changed.
+  A changed `messageId` is kept; a missing or empty one is restored silently.
+  Other fields, including `type`, are yours to change. IDs are not coerced
+  again after the hook, and its result is not copied or cleaned.
+- The hook must be synchronous and thread-safe if you call the SDK from several
+  threads. It runs once per event, including when delivery retries.
+- `before_enqueue` must be callable or `None`; `before_enqueue_on_error` must be
+  `'send'` or `'drop'`. Invalid options fail at client construction.
 - `sentAt` is absent from the hook input; the SDK sets it on the batch when sending.
-- `KeyboardInterrupt` and `SystemExit` propagate. Avoid including event data in
-  exceptions printed by your application or runtime.
-- SDK logs omit event payloads, including without a hook. Oversize errors keep
-  their existing type and prefix but report the message ID and size.
+  Python enriches `timestamp`; it does not add Node's `originalTimestamp` or `_metadata`.
+- `KeyboardInterrupt` and `SystemExit` propagate.
 
 ## Proxy configuration
 
