@@ -91,6 +91,10 @@ class Consumer(Thread):
                     block=True, timeout=self.upload_interval - elapsed)
                 item_size = len(json.dumps(
                     item, cls=DatetimeSerializer).encode())
+                if item_size > MAX_MSG_SIZE:
+                    self.log.error(
+                        'Item exceeds 4mb limit, dropping. (%s)', str(item))
+                    continue
                 items.append(item)
                 total_size += item_size
                 if total_size >= BATCH_SIZE_LIMIT:

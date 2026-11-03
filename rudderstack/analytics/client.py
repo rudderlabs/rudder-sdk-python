@@ -21,6 +21,10 @@ CHANNEL = 'server'
 BEFORE_ENQUEUE_ON_ERROR = ('send', 'drop')
 
 
+class _MessageTooBig(RuntimeError):
+    """Separate the normal size error from hook and serialization failures."""
+
+
 class Client(object):
     class DefaultConfig(object):
         write_key = None
@@ -118,9 +122,12 @@ class Client(object):
         traits = traits or {}
         context = context or {}
         # putting traits inside context
-        if isinstance(context, dict):
+        if self.before_enqueue is None or isinstance(context, dict):
             context['traits'] = traits
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
+            require('traits', traits, dict)
 
         msg = {
             'integrations': integrations,
@@ -133,7 +140,6 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
 
     def track(self, user_id=None, event=None, properties=None, context=None,
@@ -142,6 +148,10 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
+            require('properties', properties, dict)
+            require('event', event, str)
 
         msg = {
             'integrations': integrations,
@@ -155,13 +165,15 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
 
     def alias(self, previous_id=None, user_id=None, context=None,
               timestamp=None, integrations=None, message_id=None):
         context = context or {}
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('previous_id', previous_id, ID_TYPES)
+            require('user_id', user_id, ID_TYPES)
 
         msg = {
             'integrations': integrations,
@@ -173,7 +185,6 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
 
     def group(self, user_id=None, group_id=None, traits=None, context=None,
@@ -182,6 +193,10 @@ class Client(object):
         traits = traits or {}
         context = context or {}
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
+            require('group_id', group_id, ID_TYPES)
+            require('traits', traits, dict)
 
         msg = {
             'integrations': integrations,
@@ -195,7 +210,6 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
 
     def page(self, user_id=None, category=None, name=None, properties=None,
@@ -204,6 +218,14 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
+            require('properties', properties, dict)
+
+            if name:
+                require('name', name, str)
+            if category:
+                require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -218,7 +240,6 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
 
     def screen(self, user_id=None, category=None, name=None, properties=None,
@@ -227,6 +248,14 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
+        if self.before_enqueue is None:
+            require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
+            require('properties', properties, dict)
+
+            if name:
+                require('name', name, str)
+            if category:
+                require('category', category, str)
 
         msg = {
             'integrations': integrations,
@@ -241,7 +270,6 @@ class Client(object):
             'messageId': message_id,
         }
 
-        self._validate(msg)
         return self._enqueue(msg)
     
     def _enqueue(self, msg):
@@ -264,12 +292,13 @@ class Client(object):
             require('context', msg['context'], dict)
 
         # add common
-        if isinstance(timestamp, datetime):
+        if self.before_enqueue is None or isinstance(timestamp, datetime):
             timestamp = guess_timezone(timestamp)
-            timestamp = timestamp.isoformat()
-        msg['timestamp'] = timestamp
+            msg['timestamp'] = timestamp.isoformat()
+        else:
+            msg['timestamp'] = timestamp
         msg['messageId'] = stringify_id(message_id)
-        if isinstance(msg['context'], dict):
+        if self.before_enqueue is None or isinstance(msg['context'], dict):
             msg['context']['library'] = {
                 'name': 'analytics-python',
                 'version': VERSION
@@ -282,9 +311,12 @@ class Client(object):
             msg = self._run_before_enqueue(msg)
             if msg is None:
                 return True, None
-        else:
-            self._validate(msg, enriched=True)
         self.log.debug('queueing: %s', msg)
+
+        # Check message size.
+        msg_size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
+        if msg_size > MAX_MSG_SIZE:
+            raise RuntimeError(f'Message exceeds {str(int(MAX_MSG_SIZE / 1024))}kb limit. ({str(msg)})')
 
         # if send is False, return msg as if it was successfully queued
         if not self.send:
@@ -305,10 +337,8 @@ class Client(object):
             self.log.warning('analytics-python queue is full')
             return False, msg
 
-    def _validate(self, msg, enriched=False, msg_type=None):
-        """Use the call's field rules, and measure enriched events before enqueueing."""
-        if self.before_enqueue is not None and not enriched:
-            return
+    def _validate_before_enqueue(self, msg, msg_type=None):
+        """Validate enriched hook results and originals using the call's rules."""
         msg_type = msg_type or msg['type']
         if msg_type == 'alias':
             require('previous_id', msg.get('previousId'), ID_TYPES)
@@ -318,8 +348,8 @@ class Client(object):
         fields = {
             'track': [('properties', msg.get('properties', {}), dict), ('event', msg.get('event'), str)],
             'group': [('group_id', msg.get('groupId'), ID_TYPES), ('traits', msg.get('traits', {}), dict)],
-            'identify': [('traits', msg.get('context', {}).get('traits', {}), dict)]
-                        if msg_type == 'identify' else [],
+            'identify': ([('traits', msg.get('context', {}).get('traits', {}), dict)]
+                         if msg_type == 'identify' else []),
             'page': [('properties', msg.get('properties', {}), dict)],
             'screen': [('properties', msg.get('properties', {}), dict)],
         }
@@ -329,14 +359,13 @@ class Client(object):
             for field in ('name', 'category'):
                 if msg.get(field):
                     require(field, msg[field], str)
-        if enriched:
-            require('integrations', msg.get('integrations', {}), dict)
-            require('type', msg.get('type'), str)
-            require('timestamp', msg.get('timestamp'), (str, datetime))
-            require('context', msg.get('context', {}), dict)
-            size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
-            if size > MAX_MSG_SIZE:
-                self.log.warning('Message exceeds %skb limit. (%s)', int(MAX_MSG_SIZE / 1024), msg)
+        require('integrations', msg.get('integrations', {}), dict)
+        require('type', msg.get('type'), str)
+        require('timestamp', msg.get('timestamp'), (str, datetime))
+        require('context', msg.get('context', {}), dict)
+        msg_size = len(json.dumps(msg, cls=DatetimeSerializer).encode())
+        if msg_size > MAX_MSG_SIZE:
+            raise _MessageTooBig(f'Message exceeds {str(int(MAX_MSG_SIZE / 1024))}kb limit. ({str(msg)})')
 
     def _run_before_enqueue(self, msg):
         """Run the hook on a deep copy; return its event, the original, or None."""
@@ -346,7 +375,7 @@ class Client(object):
                 self.log.debug('before_enqueue dropped %s event %s.', msg['type'], msg['messageId'])
                 return None
             require('before_enqueue result (dict or None)', result, dict)
-            self._validate(result, enriched=True, msg_type=msg['type'])
+            self._validate_before_enqueue(result, msg_type=msg['type'])
             library = {'name': 'analytics-python', 'version': VERSION}
             context = result.setdefault('context', {})
             if result.get('channel') != CHANNEL or context.get('library') != library:
@@ -356,6 +385,8 @@ class Client(object):
             if not result.get('messageId'):
                 result['messageId'] = msg['messageId']
             return result
+        except _MessageTooBig as error:
+            raise RuntimeError(str(error)) from None
         except Exception as error:
             drop = self.before_enqueue_on_error == 'drop'
             self.log.error('before_enqueue failed for %s event %s, %s. %s',
@@ -363,7 +394,10 @@ class Client(object):
                            'dropping the event' if drop else 'sending the original event', error)
             if drop:
                 return None
-            self._validate(msg, enriched=True)
+            try:
+                self._validate_before_enqueue(msg)
+            except _MessageTooBig as error:
+                raise RuntimeError(str(error)) from None
             return msg
 
     def flush(self):

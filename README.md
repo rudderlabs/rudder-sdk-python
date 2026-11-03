@@ -102,8 +102,8 @@ client.identify('user-id', traits={'email': 'ada@example.com', 'plan': 'pro'})
   `Client` methods return `(True, None)` and `on_error` is not called.
 - With a hook configured, validation waits until the hook returns, so the hook
   can fix an invalid call. The returned dict uses the call's normal field and
-  serialization validation. Events over Python's 4 MB limit warn and are sent,
-  just as without a hook; oversize is not a hook error.
+  serialization validation. Events over Python's 4 MB limit raise the usual
+  `RuntimeError`, just as without a hook; oversize is not a hook error.
 - If the hook raises an `Exception`, returns something other than a dict or
   `None`, or fails validation (including cyclic data), the SDK logs the error
   as thrown. The default `before_enqueue_on_error='send'` validates and sends

@@ -2,6 +2,8 @@
 
 All fixtures apply in Python. Callback success maps to (True, None); Python
 uses its existing 4 MB limit rather than Node's 32 KB. Python supports cycles.
+post_hook_oversize_warns maps to the usual RuntimeError, as without a hook;
+oversize is not a hook error and nothing is sent.
 """
 import copy
 import json
@@ -72,6 +74,14 @@ def test_conformance(fixture, wire, caplog):
         client = Client('test-key', host='http://localhost', gzip=False, before_enqueue=hook,
                         upload_interval=0.01, max_retries=1, **options)
     caplog.clear()
+    if fixture_id == 'post_hook_oversize_warns':
+        with pytest.raises(RuntimeError, match=r'^Message exceeds 4096kb limit\.'):
+            track(client)
+        wire.assert_not_called()
+        on_error.assert_not_called()
+        assert len(observed) == 1
+        assert not caplog.records
+        return
     try:
         with mock.patch('time.sleep'):
             result = track(client, **({'event': None} if fixture_id == 'hook_fixes_invalid_call' else {}))
@@ -87,7 +97,7 @@ def test_conformance(fixture, wire, caplog):
     assert len(errors) == int(fixture['outcome'] == 'original' or fixture_id in
                               ('throw_drop_none', 'required_field_hook_error_drop'))
     assert len(warnings) == int(fixture_id in
-                                ('restore_channel', 'restore_context_library', 'post_hook_oversize_warns'))
+                                ('restore_channel', 'restore_context_library'))
     if fixture['outcome'] == 'drop':
         assert actual == []
         assert result == (True, None)
@@ -99,8 +109,6 @@ def test_conformance(fixture, wire, caplog):
         expected['event'] = 'Fixed'
     if fixture_id == 'keep_messageid_change':
         expected['messageId'] = 'm2'
-    if fixture_id == 'post_hook_oversize_warns':
-        expected['properties']['blob'] = 'x' * MAX_MSG_SIZE
     assert actual == [expected] * (2 if fixture_id == 'once_across_retries' else 1)
     assert result == (True, expected)
     if fixture_id == 'enriched_input':

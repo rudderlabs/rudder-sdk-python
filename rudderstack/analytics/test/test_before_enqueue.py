@@ -86,9 +86,12 @@ def test_validation_failure_both_policies(wire, caplog):
 
 def test_hook_fixes_invalid_call(wire, caplog):
     def hook(event):
-        event.update(event='Fixed', userId='fixed-user', properties={})
+        event.update(event='Fixed', userId='fixed-user', properties={},
+                     context={'library': {'name': 'analytics-python', 'version': VERSION}},
+                     integrations={}, timestamp='2026-01-01T00:00:00+00:00')
         return event
-    track(make_client(hook), user_id=None, event=None, properties='invalid')
+    track(make_client(hook), user_id=None, event=None, properties='invalid',
+          context='invalid', integrations='invalid', timestamp=42)
     assert sent(wire)[0]['event'] == 'Fixed'
     assert not caplog.records
 
@@ -120,21 +123,29 @@ def test_message_id_change_and_removal(wire, caplog):
     assert not caplog.records
 
 
-def test_oversize_warns_and_sends(wire, caplog):
+def test_oversize_raises_as_without_hook(wire, caplog):
     def hook(event):
         event['properties']['blob'] = 'x' * MAX_MSG_SIZE
         return event
-    client = Client('test-key', host='http://localhost', gzip=False, before_enqueue=hook,
-                    upload_interval=0.01)
-    try:
-        track(client)
-        client.flush()
-    finally:
-        client.shutdown()
-    assert len(sent(wire)) == 1
+
+    properties = {'total': 1, 'blob': 'x' * MAX_MSG_SIZE}
+    with pytest.raises(RuntimeError) as baseline:
+        track(make_client(), properties=properties)
+    for policy in ('send', 'drop'):
+        with pytest.raises(RuntimeError) as oversized:
+            track(make_client(hook, before_enqueue_on_error=policy))
+        assert type(oversized.value) is RuntimeError
+        assert str(oversized.value) == str(baseline.value)
+    wire.assert_not_called()
+    assert not caplog.records
+
+    # A throwing hook still follows the policy; send validates the original size.
+    with pytest.raises(RuntimeError) as original:
+        track(make_client(throw), properties=properties)
+    assert str(original.value) == str(baseline.value)
+    wire.assert_not_called()
     assert len(caplog.records) == 1
-    assert caplog.records[0].levelname == 'WARNING'
-    assert caplog.records[0].getMessage().startswith('Message exceeds 4096kb limit.')
+    assert caplog.records[0].levelname == 'ERROR'
 
 
 def test_once_across_retries(wire):
