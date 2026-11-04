@@ -61,6 +61,55 @@ def test_throw_send_original(wire, caplog):
     on_error.assert_not_called()
 
 
+@pytest.mark.parametrize('fields', [
+    {'timestamp': 'invalid'},
+    {'user_id': []},
+    {'user_id': 0},
+])
+def test_throw_send_rejects_invalid_original_like_no_hook(wire, fields):
+    with pytest.raises(AssertionError) as baseline:
+        track(make_client(), **fields)
+    with pytest.raises(type(baseline.value)) as fallback:
+        track(make_client(throw), **fields)
+    assert str(fallback.value) == str(baseline.value)
+    wire.assert_not_called()
+
+
+@pytest.mark.parametrize('method, fields', [
+    ('identify', {'user_id': []}),
+    ('alias', {'user_id': 'u1', 'previous_id': []}),
+    ('group', {'user_id': 'u1', 'group_id': []}),
+    ('page', {'user_id': []}),
+    ('screen', {'user_id': []}),
+])
+def test_throw_send_validates_each_calls_original_ids(wire, method, fields):
+    hook = mock.Mock(side_effect=ValueError('hook failure'))
+    with pytest.raises(AssertionError) as baseline:
+        getattr(make_client(), method)(**fields)
+    with pytest.raises(type(baseline.value)) as fallback:
+        getattr(make_client(hook), method)(**fields)
+    assert str(fallback.value) == str(baseline.value)
+    hook.assert_called_once()
+    wire.assert_not_called()
+
+
+@pytest.mark.parametrize('fields', [
+    {'timestamp': 'invalid'},
+    {'user_id': []},
+    {'user_id': 0},
+])
+def test_hook_repairs_invalid_original(wire, fields):
+    def hook(event):
+        event.update(userId='fixed-user', timestamp='2026-01-01T00:00:00+00:00')
+        return event
+
+    with pytest.raises(AssertionError):
+        track(make_client(), **fields)
+    assert track(make_client(hook), **fields)[0]
+    assert sent(wire)[0]['userId'] == 'fixed-user'
+    assert sent(wire)[0]['timestamp'] == '2026-01-01T00:00:00+00:00'
+
+
 def test_throw_drop(wire, caplog):
     assert track(make_client(throw, before_enqueue_on_error='drop')) == (True, None)
     wire.assert_not_called()
