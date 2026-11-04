@@ -93,6 +93,16 @@ def test_changed_type_is_validated_by_its_own_rules(wire, caplog):
     assert 'before_enqueue failed' in caplog.text
 
 
+@pytest.mark.parametrize('bad_type', ['', 'not-an-event-type'])
+def test_unknown_type_is_hook_error(wire, caplog, bad_type):
+    def hook(event):
+        event['type'] = bad_type
+        return event
+    track(make_client(hook))
+    assert sent(wire)[0]['type'] == 'track'
+    assert 'Invalid event type' in caplog.text
+
+
 def test_hook_fixes_invalid_call(wire, caplog):
     def hook(event):
         event.update(event='Fixed', userId='fixed-user', properties={},

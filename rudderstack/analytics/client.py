@@ -335,7 +335,9 @@ class Client(object):
 
     def _validate_before_enqueue(self, msg, msg_type=None):
         """Validate enriched hook results and originals using the call's rules."""
-        msg_type = msg_type or msg['type']
+        msg_type = msg_type or msg.get('type')
+        if msg_type not in ('track', 'identify', 'group', 'page', 'screen', 'alias'):
+            raise AssertionError('Invalid event type: {0!r}'.format(msg_type))
         if msg_type == 'alias':
             require('previous_id', msg.get('previousId'), ID_TYPES)
             require('user_id', msg.get('userId'), ID_TYPES)
