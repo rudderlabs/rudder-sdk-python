@@ -33,6 +33,7 @@ setup(
     maintainer='RudderStack',
     maintainer_email='sdk@rudderstack.com',
     packages=['rudderstack.analytics', 'rudderstack.analytics.test'],
+    package_data={'rudderstack.analytics.test': ['fixtures/*.json']},
     python_requires='>=3.8.0',
     license='MIT License',
     install_requires=install_requires,
