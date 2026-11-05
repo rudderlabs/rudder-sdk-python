@@ -121,9 +121,13 @@ class Client(object):
         if self.before_enqueue is None or isinstance(context, dict):
             context['traits'] = traits
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('traits', traits, dict)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -136,7 +140,7 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
 
     def track(self, user_id=None, event=None, properties=None, context=None,
               timestamp=None, anonymous_id=None, integrations=None,
@@ -144,10 +148,14 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('properties', properties, dict)
             require('event', event, str)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -161,15 +169,19 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
 
     def alias(self, previous_id=None, user_id=None, context=None,
               timestamp=None, integrations=None, message_id=None):
         context = context or {}
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('previous_id', previous_id, ID_TYPES)
             require('user_id', user_id, ID_TYPES)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -181,7 +193,7 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
 
     def group(self, user_id=None, group_id=None, traits=None, context=None,
               timestamp=None, anonymous_id=None, integrations=None,
@@ -189,10 +201,14 @@ class Client(object):
         traits = traits or {}
         context = context or {}
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('group_id', group_id, ID_TYPES)
             require('traits', traits, dict)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -206,7 +222,7 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
 
     def page(self, user_id=None, category=None, name=None, properties=None,
              context=None, timestamp=None, anonymous_id=None,
@@ -214,7 +230,8 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('properties', properties, dict)
 
@@ -222,6 +239,9 @@ class Client(object):
                 require('name', name, str)
             if category:
                 require('category', category, str)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -236,7 +256,7 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
 
     def screen(self, user_id=None, category=None, name=None, properties=None,
                context=None, timestamp=None, anonymous_id=None,
@@ -244,7 +264,8 @@ class Client(object):
         properties = properties or {}
         context = context or {}
         integrations = integrations or {}
-        if self.before_enqueue is None:
+
+        def validate():
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('properties', properties, dict)
 
@@ -252,6 +273,9 @@ class Client(object):
                 require('name', name, str)
             if category:
                 require('category', category, str)
+
+        if self.before_enqueue is None:
+            validate()
 
         msg = {
             'integrations': integrations,
@@ -266,9 +290,9 @@ class Client(object):
             'messageId': message_id,
         }
 
-        return self._enqueue(msg)
+        return self._enqueue(msg, validate)
     
-    def _enqueue(self, msg):
+    def _enqueue(self, msg, validate=None):
         """Push a new `msg` onto the queue, return `(success, msg)`"""
         timestamp = msg['timestamp']
         if timestamp is None:
@@ -281,11 +305,22 @@ class Client(object):
         if msg['integrations'] == {} :
             msg['integrations'] = {"All" : True}
             
+        # Capture common inputs before enrichment changes their types or values.
+        common_checks = (
+            ('integrations', msg['integrations'], dict),
+            ('type', msg['type'], str),
+            ('timestamp', timestamp, datetime),
+            ('context', msg['context'], dict),
+        )
+
+        def validate_original():
+            if self.before_enqueue is not None and validate is not None:
+                validate()
+            for check in common_checks:
+                require(*check)
+
         if self.before_enqueue is None:
-            require('integrations', msg['integrations'], dict)
-            require('type', msg['type'], str)
-            require('timestamp', timestamp, datetime)
-            require('context', msg['context'], dict)
+            validate_original()
 
         # add common
         if self.before_enqueue is None or isinstance(timestamp, datetime):
@@ -304,7 +339,7 @@ class Client(object):
         msg['channel'] = CHANNEL
         msg = clean(msg)
         if self.before_enqueue is not None:
-            msg = self._run_before_enqueue(msg)
+            msg = self._run_before_enqueue(msg, validate_original)
             if msg is None:
                 return True, None
         self.log.debug('queueing: %s', msg)
@@ -334,7 +369,7 @@ class Client(object):
             return False, msg
 
     def _validate_before_enqueue(self, msg, msg_type=None):
-        """Validate enriched hook results and originals using the call's rules."""
+        """Validate enriched hook results using their own event type."""
         msg_type = msg_type or msg.get('type')
         if msg_type not in ('track', 'identify', 'group', 'page', 'screen', 'alias'):
             raise AssertionError('Invalid event type: {0!r}'.format(msg_type))
@@ -359,12 +394,13 @@ class Client(object):
                     require(field, msg[field], str)
         require('integrations', msg.get('integrations', {}), dict)
         require('type', msg.get('type'), str)
+        # Enrichment converts timestamps to ISO strings, so result strings are valid.
         require('timestamp', msg.get('timestamp'), (str, datetime))
         require('context', msg.get('context', {}), dict)
         # Serialization errors are validation failures; _enqueue's size check handles oversize
         json.dumps(msg, cls=DatetimeSerializer)
 
-    def _run_before_enqueue(self, msg):
+    def _run_before_enqueue(self, msg, validate_original):
         """Run the hook on a deep copy; return its event, the original, or None."""
         try:
             result = self.before_enqueue(copy.deepcopy(msg))
@@ -389,7 +425,7 @@ class Client(object):
                            'dropping the event' if drop else 'sending the original event', error)
             if drop:
                 return None
-            self._validate_before_enqueue(msg)
+            validate_original()
             return msg
 
     def flush(self):
