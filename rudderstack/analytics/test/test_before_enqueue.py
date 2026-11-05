@@ -75,21 +75,94 @@ def test_throw_send_rejects_invalid_original_like_no_hook(wire, fields):
     wire.assert_not_called()
 
 
-@pytest.mark.parametrize('method, fields', [
-    ('identify', {'user_id': []}),
-    ('alias', {'user_id': 'u1', 'previous_id': []}),
-    ('group', {'user_id': 'u1', 'group_id': []}),
-    ('page', {'user_id': []}),
-    ('screen', {'user_id': []}),
+@pytest.mark.parametrize('policy', ['send', 'drop'])
+@pytest.mark.parametrize('method, required_fields, fields', [
+    ('identify', {'user_id': 'u1'}, {'traits': 'invalid'}),
+    ('identify', {'user_id': 'u1'}, {'user_id': None, 'context': 'invalid'}),
+    ('identify', {'user_id': 'u1'}, {'traits': 'invalid', 'context': 'invalid'}),
+    ('track', {'user_id': 'u1', 'event': 'Purchase'}, {'event': None}),
+    ('track', {'user_id': 'u1', 'event': 'Purchase'}, {'event': 42}),
+    ('track', {'user_id': 'u1', 'event': 'Purchase'}, {'properties': 'invalid'}),
+    ('track', {'user_id': 'u1', 'event': 'Purchase'},
+     {'properties': 'invalid', 'event': None, 'integrations': 'invalid'}),
+    ('alias', {'user_id': 'u1', 'previous_id': 'p1'}, {'previous_id': None}),
+    ('alias', {'user_id': 'u1', 'previous_id': 'p1'}, {'previous_id': []}),
+    ('alias', {'user_id': 'u1', 'previous_id': 'p1'},
+     {'previous_id': None, 'user_id': None, 'context': 'invalid'}),
+    ('group', {'user_id': 'u1', 'group_id': 'g1'}, {'group_id': None}),
+    ('group', {'user_id': 'u1', 'group_id': 'g1'}, {'group_id': []}),
+    ('group', {'user_id': 'u1', 'group_id': 'g1'}, {'traits': 'invalid'}),
+    ('group', {'user_id': 'u1', 'group_id': 'g1'},
+     {'group_id': None, 'traits': 'invalid', 'context': 'invalid'}),
+] + [
+    (method, {'user_id': 'u1'}, fields)
+    for method in ('page', 'screen')
+    for fields in (
+        {'properties': 'invalid'}, {'name': 42}, {'category': 42},
+        {'properties': 'invalid', 'name': 42, 'category': 42},
+        {'name': 42, 'category': 42, 'integrations': 'invalid'},
+    )
+] + [
+    (method, required_fields, fields)
+    for method, required_fields in (
+        ('identify', {'user_id': 'u1'}),
+        ('track', {'user_id': 'u1', 'event': 'Purchase'}),
+        ('page', {'user_id': 'u1'}),
+        ('screen', {'user_id': 'u1'}),
+        ('group', {'user_id': 'u1', 'group_id': 'g1'}),
+        ('alias', {'user_id': 'u1', 'previous_id': 'p1'}),
+    )
+    for fields in (
+        {'user_id': None}, {'user_id': []}, {'user_id': 0},
+        {'context': 'invalid'}, {'context': ['invalid']}, {'context': 42},
+        {'integrations': 'invalid'}, {'timestamp': 'invalid'}, {'timestamp': 42},
+        {'integrations': 'invalid', 'timestamp': 'invalid', 'context': 'invalid'},
+        {'timestamp': 'invalid', 'context': 'invalid'},
+        {'user_id': None, 'integrations': 'invalid', 'timestamp': 'invalid'},
+    )
+    if method != 'alias' or fields != {'user_id': 0}
 ])
-def test_throw_send_validates_each_calls_original_ids(wire, method, fields):
+def test_throw_validates_original_like_no_hook(wire, policy, method, required_fields, fields):
+    options = dict(required_fields, **fields)
     hook = mock.Mock(side_effect=ValueError('hook failure'))
+    client = make_client(hook, before_enqueue_on_error=policy)
+    with pytest.raises((AssertionError, TypeError)) as baseline:
+        getattr(make_client(), method)(**options)
+    if policy == 'send':
+        with pytest.raises(type(baseline.value)) as fallback:
+            getattr(client, method)(**options)
+        assert type(fallback.value) is type(baseline.value)
+        assert str(fallback.value) == str(baseline.value)
+    else:
+        assert getattr(client, method)(**options) == (True, None)
+    hook.assert_called_once()
+    assert client.queue.empty()
+    wire.assert_not_called()
+
+
+@pytest.mark.parametrize('fields', [
+    {'integrations': 'invalid'}, {'type': 42}, {'timestamp': 'invalid'},
+    {'context': 'invalid'},
+    {'integrations': 'invalid', 'type': 42, 'timestamp': 'invalid', 'context': 'invalid'},
+    {'type': 42, 'timestamp': 'invalid', 'context': 'invalid'},
+    {'timestamp': 'invalid', 'context': 'invalid'},
+])
+def test_throw_send_common_checks_like_no_hook(wire, fields):
+    def message():
+        msg = dict(type='track', userId='u1', event='Purchase', integrations={},
+                   timestamp=None, context={})
+        msg.update(fields)
+        return msg
+
+    hook = mock.Mock(side_effect=ValueError('hook failure'))
+    client = make_client(hook)
     with pytest.raises(AssertionError) as baseline:
-        getattr(make_client(), method)(**fields)
+        make_client()._enqueue(message())
     with pytest.raises(type(baseline.value)) as fallback:
-        getattr(make_client(hook), method)(**fields)
+        client._enqueue(message())
     assert str(fallback.value) == str(baseline.value)
     hook.assert_called_once()
+    assert client.queue.empty()
     wire.assert_not_called()
 
 

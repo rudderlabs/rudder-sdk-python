@@ -117,12 +117,19 @@ class Client(object):
                  anonymous_id=None, integrations=None, message_id=None):
         traits = traits or {}
         context = context or {}
+
+        def set_traits():
+            context['traits'] = traits
+
         # putting traits inside context
         if self.before_enqueue is None or isinstance(context, dict):
-            context['traits'] = traits
+            set_traits()
         integrations = integrations or {}
 
         def validate():
+            # Replay the context operation skipped before the hook, before ID checks.
+            if self.before_enqueue is not None and not isinstance(context, dict):
+                set_traits()
             require('user_id or anonymous_id', user_id or anonymous_id, ID_TYPES)
             require('traits', traits, dict)
 
