@@ -12,7 +12,8 @@ charset-normalizer==3.3.2
     # via requests
 deprecation==2.1.0
     # via -r requirements.in
-flake8==7.1.1
+flake8==7.4.1 ; python_version >= "3.10"
+flake8==7.1.1 ; python_version < "3.10"
     # via -r requirements.in
 idna==3.20 ; python_version >= "3.9"
 idna==3.15 ; python_version < "3.9"
@@ -32,9 +33,11 @@ packaging==24.1
     #   pytest
 pluggy==1.5.0
     # via pytest
-pycodestyle==2.12.1
+pycodestyle==2.15.0 ; python_version >= "3.10"
+pycodestyle==2.12.1 ; python_version < "3.10"
     # via flake8
-pyflakes==3.2.0
+pyflakes==4.0.3 ; python_version >= "3.10"
+pyflakes==3.2.0 ; python_version < "3.10"
     # via flake8
 pytest==8.3.5
     # via -r requirements.in
