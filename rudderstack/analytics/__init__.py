@@ -44,6 +44,8 @@ timeout = Client.DefaultConfig.timeout
 upload_interval = Client.DefaultConfig.upload_interval
 upload_size = Client.DefaultConfig.upload_size
 max_retries = Client.DefaultConfig.max_retries
+before_enqueue = Client.DefaultConfig.before_enqueue
+before_enqueue_on_error = Client.DefaultConfig.before_enqueue_on_error
 
 default_client = None
 
@@ -106,7 +108,9 @@ def _proxy(method, *args, **kwargs):
                                 max_queue_size=max_queue_size,
                                 send=send, on_error=on_error,
                                 gzip=gzip, max_retries=max_retries,
-                                sync_mode=sync_mode, timeout=timeout)
+                                sync_mode=sync_mode, timeout=timeout,
+                                before_enqueue=before_enqueue,
+                                before_enqueue_on_error=before_enqueue_on_error)
 
     fn = getattr(default_client, method)
     fn(*args, **kwargs)
