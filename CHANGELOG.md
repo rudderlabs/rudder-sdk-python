@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.2.0](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.9...v2.2.0) (2026-11-04)
+
+
+### Features
+
+* add before_enqueue hook to drop or edit events before queueing ([#171](https://github.com/rudderlabs/rudder-sdk-python/issues/171)) ([2414850](https://github.com/rudderlabs/rudder-sdk-python/commit/24148501aff8aefa56c641d0aaf2c2bfcd4235ec))
+
+
+### Miscellaneous
+
+* configure security-focused dependabot updates ([#165](https://github.com/rudderlabs/rudder-sdk-python/issues/165)) ([3ed8d17](https://github.com/rudderlabs/rudder-sdk-python/commit/3ed8d1759db24e90950d4540f3fdbf7a36e0eff5))
+* **deps:** bump actions/create-github-app-token from 3.2.0 to 3.3.0 ([#162](https://github.com/rudderlabs/rudder-sdk-python/issues/162)) ([5150274](https://github.com/rudderlabs/rudder-sdk-python/commit/5150274785bf70872f63cc943550dab4b303d1ce))
+* **deps:** bump actions/download-artifact from 8.0.1 to 8.0.2 ([#160](https://github.com/rudderlabs/rudder-sdk-python/issues/160)) ([3fcc45f](https://github.com/rudderlabs/rudder-sdk-python/commit/3fcc45f14870ae8190ad2c44831b7c7d695eb8dd))
+* **deps:** bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#159](https://github.com/rudderlabs/rudder-sdk-python/issues/159)) ([7299a03](https://github.com/rudderlabs/rudder-sdk-python/commit/7299a031a2bff81694d72b32105b715acc9cb65b))
+* **deps:** bump certifi from 2024.8.30 to 2026.10.18 ([#167](https://github.com/rudderlabs/rudder-sdk-python/issues/167)) ([75e6b5a](https://github.com/rudderlabs/rudder-sdk-python/commit/75e6b5af3e72d2bb4b9965560b6dfb5f4b9c943a))
+* **deps:** bump reviewdog/action-actionlint from 1.69.1 to 1.80.6 ([#163](https://github.com/rudderlabs/rudder-sdk-python/issues/163)) ([148461c](https://github.com/rudderlabs/rudder-sdk-python/commit/148461c80f2142cccb70bc5528cc8024c6146ffc))
+* **deps:** bump step-security/harden-runner from 2.21.1 to 2.22.2 ([#158](https://github.com/rudderlabs/rudder-sdk-python/issues/158)) ([83f0003](https://github.com/rudderlabs/rudder-sdk-python/commit/83f00032fc4e8c3ff1b6966d095448af2504c6e2))
+* move self-hosted CI jobs to the org runner scale set ([#152](https://github.com/rudderlabs/rudder-sdk-python/issues/152)) ([835602f](https://github.com/rudderlabs/rudder-sdk-python/commit/835602f8d6901c967d75bb0ff5468d86a023fa0a))
+* move the PR title check to check-pr-title v2.0.3 ([#170](https://github.com/rudderlabs/rudder-sdk-python/issues/170)) ([44e1211](https://github.com/rudderlabs/rudder-sdk-python/commit/44e1211acdea0627ed629a001e1502bf8846c899))
+* preserve dependabot prs and schedule quarterly pip updates ([#146](https://github.com/rudderlabs/rudder-sdk-python/issues/146)) ([c1bcd67](https://github.com/rudderlabs/rudder-sdk-python/commit/c1bcd67b15c329a24747b636f9b45712e71b14aa))
+* **release:** gate python publication notification on exact package e2e ([#166](https://github.com/rudderlabs/rudder-sdk-python/issues/166)) ([322d913](https://github.com/rudderlabs/rudder-sdk-python/commit/322d91358fb7e86bac746e7eba89e1c18f98772c))
+* run full live e2e on release prs ([#169](https://github.com/rudderlabs/rudder-sdk-python/issues/169)) ([0c0bcf7](https://github.com/rudderlabs/rudder-sdk-python/commit/0c0bcf72399cf144aa714ff14b3781df8b31e335))
+* switch branding images to CDN URLs ([#149](https://github.com/rudderlabs/rudder-sdk-python/issues/149)) ([536022e](https://github.com/rudderlabs/rudder-sdk-python/commit/536022e25991a3fea4b3b93299078470bc935c1a))
+* verify published e2e with per-run cleanup ([#168](https://github.com/rudderlabs/rudder-sdk-python/issues/168)) ([8f81528](https://github.com/rudderlabs/rudder-sdk-python/commit/8f815285a416251f9fa67c728178800d490d9e65))
+
+## [2.1.9](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.8...v2.1.9) (2026-09-08)
+
+
+### Bug Fixes
+
+* sdk-5444 support isolated source builds ([#145](https://github.com/rudderlabs/rudder-sdk-python/issues/145)) ([90d2923](https://github.com/rudderlabs/rudder-sdk-python/commit/90d292304cf56a0290bedc4bb0919712beba79f8))
+
+
+### Miscellaneous
+
+* apply security best practices from step security ([#132](https://github.com/rudderlabs/rudder-sdk-python/issues/132)) ([3fd5869](https://github.com/rudderlabs/rudder-sdk-python/commit/3fd58694378c637f0f40e52c16f50bd38374a8cf))
+* **deps:** bump actions/download-artifact from 4.3.0 to 8.0.1 ([#136](https://github.com/rudderlabs/rudder-sdk-python/issues/136)) ([a9dafb5](https://github.com/rudderlabs/rudder-sdk-python/commit/a9dafb558a90d3019ccab5ae0e2a2d0baeb2eb79))
+* **deps:** bump actions/stale from 9.1.0 to 11.0.0 ([#121](https://github.com/rudderlabs/rudder-sdk-python/issues/121)) ([954ef33](https://github.com/rudderlabs/rudder-sdk-python/commit/954ef33c8c188804d6d2ede9232d25e7eb7c6ba1))
+* **deps:** bump actions/upload-artifact from 4.6.2 to 7.0.1 ([#139](https://github.com/rudderlabs/rudder-sdk-python/issues/139)) ([d6db349](https://github.com/rudderlabs/rudder-sdk-python/commit/d6db34909a1482d72a4013829c46d53ea5edec69))
+* **deps:** bump pytest from 8.3.3 to 8.3.5 ([#144](https://github.com/rudderlabs/rudder-sdk-python/issues/144)) ([33bba2a](https://github.com/rudderlabs/rudder-sdk-python/commit/33bba2af2474fb40e2a34ee6b8ddd899b110c5b9))
+* **deps:** bump rudderlabs/github-action-check-pr-title from 1.0.11 to 1.0.12 ([#138](https://github.com/rudderlabs/rudder-sdk-python/issues/138)) ([ba06a2f](https://github.com/rudderlabs/rudder-sdk-python/commit/ba06a2fb6d43508d360ce4ff4a2541cb31e12335))
+* **deps:** bump step-security/harden-runner from 2.16.0 to 2.21.1 ([#137](https://github.com/rudderlabs/rudder-sdk-python/issues/137)) ([4a0c2ba](https://github.com/rudderlabs/rudder-sdk-python/commit/4a0c2ba7eccad5ce9adb3e2d6e4e12942f85287e))
+* **deps:** sdk-5393 update compatible security dependencies ([#140](https://github.com/rudderlabs/rudder-sdk-python/issues/140)) ([e9e92be](https://github.com/rudderlabs/rudder-sdk-python/commit/e9e92be39f3071dcc68dded5dd2ff711c5a554d0))
+* sdk-5412 make pr tests network-free ([#133](https://github.com/rudderlabs/rudder-sdk-python/issues/133)) ([d2deb2c](https://github.com/rudderlabs/rudder-sdk-python/commit/d2deb2c6f7ff0711f2536870b8a0857a6608883c))
+* validate workflows and package artifacts ([#135](https://github.com/rudderlabs/rudder-sdk-python/issues/135)) ([cd77a56](https://github.com/rudderlabs/rudder-sdk-python/commit/cd77a565b843a395d7b1ae3b7905128386f1161e))
+
 ## [2.1.8](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.7...v2.1.8) (2026-09-01)
 
 
