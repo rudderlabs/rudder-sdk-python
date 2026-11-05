@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.2.1](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.2.0...v2.2.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **before-enqueue:** raise no-hook errors from send-fallback validation ([#174](https://github.com/rudderlabs/rudder-sdk-python/issues/174)) ([1691648](https://github.com/rudderlabs/rudder-sdk-python/commit/1691648ecc4b091251715fe283954312ee23bb73))
+* **before-enqueue:** validate send-fallback originals like no-hook calls ([#172](https://github.com/rudderlabs/rudder-sdk-python/issues/172)) ([533d734](https://github.com/rudderlabs/rudder-sdk-python/commit/533d7342f919443fe6fba6f35666318485169fae))
+
+
+### Miscellaneous
+
+* **deps:** bump flake8 from 7.1.1 to 7.4.1 ([#155](https://github.com/rudderlabs/rudder-sdk-python/issues/155)) ([9fad78c](https://github.com/rudderlabs/rudder-sdk-python/commit/9fad78c85dfcb020064a69c4fc38dbe8aa8b8105))
+* **deps:** bump idna from 3.15 to 3.20 ([#154](https://github.com/rudderlabs/rudder-sdk-python/issues/154)) ([befef21](https://github.com/rudderlabs/rudder-sdk-python/commit/befef21332d88dfcfd4d43908c7845c182062064))
+* **deps:** bump python-dotenv from 1.0.1 to 1.2.3 ([#123](https://github.com/rudderlabs/rudder-sdk-python/issues/123)) ([f9383ee](https://github.com/rudderlabs/rudder-sdk-python/commit/f9383ee84cd9e7ea44d460be4325cb245c14a53b))
+* **deps:** bump the pip group across 1 directory with 3 updates ([#142](https://github.com/rudderlabs/rudder-sdk-python/issues/142)) ([a3c6eaa](https://github.com/rudderlabs/rudder-sdk-python/commit/a3c6eaa1266d926297953deb591d635d888d96f1))
+
 ## [2.2.0](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.1.9...v2.2.0) (2026-11-04)
 
 
