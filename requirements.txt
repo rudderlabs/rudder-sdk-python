@@ -6,7 +6,7 @@
 #
 backoff==2.2.1
     # via -r requirements.in
-certifi==2024.8.30
+certifi==2026.10.18
     # via requests
 charset-normalizer==3.3.2
     # via requests
