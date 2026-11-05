@@ -27,7 +27,7 @@ The retry uses the tag's event-time commit and exact version. It cannot upload p
 
 Published E2E currently accepts stable `X.Y.Z` versions only. Tags must contain this workflow, so older tags need an exact-version dispatch through the central workflow instead. A successful retry does not change the original failed run or its notification. A published package remains published if acceptance fails.
 
-The central prerequisites and shared action v1.0.0 are merged. This caller pins the released workflow at `b6de40cc65abe8ee6c6593aac1787aea746b671f`. Hosted live acceptance remains pending the next normal release under [SDK-5971](https://linear.app/rudderstack/issue/SDK-5971).
+The caller pins shared-action #14 at `2d1262f86e519195dc723a8d244a8ecc8bcedb21` for full live delivery and verified per-run cleanup. Coordinate activation with central #46/#47 under [SDK-6016](https://linear.app/rudderstack/issue/SDK-6016). Hosted acceptance remains pending the next normal release under [SDK-5797](https://linear.app/rudderstack/issue/SDK-5797).
 
 ## Retry after a workflow fix
 

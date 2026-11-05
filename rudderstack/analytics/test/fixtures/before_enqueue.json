@@ -1,0 +1,102 @@
+[
+  {
+    "id": "enriched_input",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "edit_reaches_wire",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "null_drop",
+    "policy": "send",
+    "outcome": "drop"
+  },
+  {
+    "id": "throw_send_original",
+    "policy": "send",
+    "outcome": "original"
+  },
+  {
+    "id": "throw_drop_none",
+    "policy": "drop",
+    "outcome": "drop"
+  },
+  {
+    "id": "mutate_then_throw_isolated",
+    "policy": "send",
+    "outcome": "original"
+  },
+  {
+    "id": "non_object_hook_error",
+    "policy": "send",
+    "outcome": "original"
+  },
+  {
+    "id": "required_field_hook_error",
+    "policy": "send",
+    "outcome": "original"
+  },
+  {
+    "id": "required_field_hook_error_drop",
+    "policy": "drop",
+    "outcome": "drop"
+  },
+  {
+    "id": "hook_fixes_invalid_call",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "restore_channel",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "restore_context_library",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "keep_messageid_change",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "restore_removed_messageid",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "post_hook_oversize_normal_handling",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "cyclic_output_hook_error",
+    "policy": "send",
+    "outcome": "original"
+  },
+  {
+    "id": "once_across_retries",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "no_hook_unchanged",
+    "policy": "send",
+    "outcome": "send"
+  },
+  {
+    "id": "invalid_hook_config",
+    "policy": "send",
+    "outcome": "config_error"
+  },
+  {
+    "id": "invalid_policy_config",
+    "policy": "send",
+    "outcome": "config_error"
+  }
+]
