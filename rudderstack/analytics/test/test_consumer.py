@@ -2,6 +2,8 @@ import unittest
 from unittest import mock
 import time
 import json
+import logging
+import requests
 
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
@@ -59,6 +61,37 @@ class TestConsumer(unittest.TestCase):
         success = consumer.upload()
         self.assertTrue(success)
         post.assert_called_once()
+
+    def test_on_error_gets_redacted_connection_error(self):
+        write_key = 'SECRET_WRITE_KEY_5579'
+        errors = []
+        q = Queue()
+        q.put({'type': 'track', 'event': 'python event', 'userId': 'userId'})
+        consumer = Consumer(q, write_key, host='http://127.0.0.1:1',
+                            retries=0, timeout=2,
+                            on_error=lambda e, batch: errors.append(e))
+
+        self.assertFalse(consumer.upload())
+
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], requests.ConnectionError)
+        self.assertIn('refused', str(errors[0]).lower())
+        self.assertIsNone(errors[0].request)
+
+    @mock.patch('rudderstack.analytics.consumer.post')
+    def test_raising_on_error_does_not_escape(self, post):
+        write_key = 'SECRET_WRITE_KEY_5579'
+        post.side_effect = requests.ConnectionError('refused')
+        q = Queue()
+        q.put({'type': 'track', 'event': 'python event', 'userId': 'userId'})
+        consumer = Consumer(q, write_key, retries=0, on_error=mock.Mock(
+            side_effect=ValueError('callback saw {0}'.format(write_key))))
+
+        with self.assertLogs('rudderstack', logging.ERROR) as logs:
+            self.assertFalse(consumer.upload())
+
+        self.assertEqual(q.unfinished_tasks, 0)
+        self.assertNotIn(write_key, ' '.join(logs.output))
 
     def test_upload_interval(self):
         # Put _n_ items in the queue, pausing a little bit more than

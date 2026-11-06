@@ -3,9 +3,11 @@ from io import BytesIO
 from gzip import GzipFile
 import logging
 import json
+import base64
+import re
 from dateutil.tz import tzutc
 from requests.auth import HTTPBasicAuth
-from requests import sessions
+from requests import RequestException, sessions
 
 from rudderstack.analytics.version import VERSION
 from rudderstack.analytics.utils import remove_trailing_slash
@@ -44,7 +46,15 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
             proxies = {'http': proxy_url, 'https': proxy_url}
         kwargs['proxies'] = proxies
 
-    res = _session.post(url, **kwargs)
+    safe_error = None
+    try:
+        res = _session.post(url, **kwargs)
+    except RequestException as error:
+        safe_error = _redact_request_exception(error, write_key)
+    # Raised outside the handler so the original error, whose request holds
+    # the Authorization header, is not kept as __context__.
+    if safe_error is not None:
+        raise safe_error
 
     if res.status_code == 200:
         log.debug('data uploaded successfully')
@@ -52,10 +62,18 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
 
     try:
         payload = res.json()
-        log.debug('received response: %s', payload)
-        raise APIError(res.status_code, payload['code'], payload['message'])
     except ValueError:
-        raise APIError(res.status_code, 'unknown', res.text)
+        code, message = 'unknown', res.text
+    else:
+        log.debug('received response: %s',
+                  _sanitize_text(str(payload), write_key))
+        code, message = payload['code'], payload['message']
+
+    # Raise after the handler so the decoder cannot expose its raw document.
+    if isinstance(code, (str, list, dict)):
+        code = _sanitize_text(str(code), write_key)
+    raise APIError(res.status_code, code, _sanitize_text(str(message), write_key))
+
 
 def _gzip_json(data):
     buf = BytesIO()
@@ -64,6 +82,34 @@ def _gzip_json(data):
         # whose default encoding is utf-8.
         gz.write(data.encode('utf-8'))
     return buf.getvalue()
+
+
+def _sanitize_text(text, write_key):
+    """Redact the write key, its Basic auth form and Authorization values."""
+    if not isinstance(text, str):
+        return text
+    if write_key:
+        encoded_key = base64.b64encode(
+            '{0}:'.format(write_key).encode('utf-8')).decode('ascii')
+        text = text.replace(encoded_key, '[REDACTED]')
+        text = text.replace(write_key, '[REDACTED]')
+    return re.sub(
+        r'''(?ix)(
+            ["']?authorization["']?\s*[:=]\s*
+            ["']?
+            (?:(?:basic|bearer)\s+)?
+        )[^"',}\]\s;]+''',
+        r'\1[REDACTED]',
+        text)
+
+
+def _redact_request_exception(error, write_key):
+    """Return the same requests exception type without request/response."""
+    message = _sanitize_text(str(error), write_key)
+    try:
+        return type(error)(message)
+    except Exception:
+        return RequestException(message)
 
 class APIError(Exception):
 

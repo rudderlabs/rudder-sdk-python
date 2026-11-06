@@ -4,7 +4,8 @@ from threading import Thread
 import backoff
 import json
 
-from rudderstack.analytics.request import post, APIError, DatetimeSerializer
+from rudderstack.analytics.request import (
+    post, APIError, DatetimeSerializer, _sanitize_text)
 
 from queue import Empty
 
@@ -67,7 +68,13 @@ class Consumer(Thread):
             self.log.error('error uploading: %s', e)
             success = False
             if self.on_error:
-                self.on_error(e, batch)
+                # A raising callback must not kill the thread, or flush() hangs.
+                try:
+                    self.on_error(e, batch)
+                except Exception as callback_error:
+                    self.log.error(
+                        'error in on_error callback: %s',
+                        _sanitize_text(str(callback_error), self.write_key))
         finally:
             # mark items as acknowledged from queue
             for _ in batch:

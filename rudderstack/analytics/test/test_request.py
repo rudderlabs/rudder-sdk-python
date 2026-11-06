@@ -1,4 +1,6 @@
 from datetime import datetime, date
+import base64
+import traceback
 import unittest
 from unittest import mock
 import json
@@ -44,8 +46,9 @@ class TestRequests(unittest.TestCase):
 
     @mock.patch('rudderstack.analytics.request._session.post')
     def test_non_json_error_response(self, session_post):
-        response = mock.Mock(status_code=502, text='Bad gateway')
-        response.json.side_effect = ValueError('invalid JSON')
+        response = requests.Response()
+        response.status_code = 502
+        response._content = ('Bad gateway ' + TEST_WRITE_KEY).encode()
         session_post.return_value = response
 
         with self.assertRaises(APIError) as raised:
@@ -53,7 +56,8 @@ class TestRequests(unittest.TestCase):
 
         self.assertEqual(raised.exception.status, 502)
         self.assertEqual(raised.exception.code, 'unknown')
-        self.assertEqual(raised.exception.message, 'Bad gateway')
+        self.assertEqual(raised.exception.message, 'Bad gateway [REDACTED]')
+        self.assertIsNone(raised.exception.__context__)
 
     @mock.patch('rudderstack.analytics.request._session.post')
     def test_request_error_is_propagated(self, session_post):
@@ -71,6 +75,58 @@ class TestRequests(unittest.TestCase):
         with self.assertRaisesRegex(requests.ConnectionError,
                                     'host unavailable'):
             post(TEST_WRITE_KEY, host=TEST_DATA_PLANE_URL, batch=[])
+
+    def test_connection_failure_does_not_expose_write_key(self):
+        write_key = 'SECRET_WRITE_KEY_5579'
+        encoded_key = base64.b64encode(b'SECRET_WRITE_KEY_5579:').decode()
+
+        with self.assertRaises(requests.ConnectionError) as raised:
+            post(write_key, host='http://127.0.0.1:1', timeout=2, batch=[])
+
+        error = raised.exception
+        self.assertIn('refused', str(error).lower())
+        self.assertIsNone(error.request)
+        self.assertIsNone(error.response)
+        self.assertIsNone(error.__cause__)
+        self.assertIsNone(error.__context__)
+        exposed = repr(error) + ''.join(traceback.format_exception(
+            type(error), error, error.__traceback__))
+        self.assertNotIn(write_key, exposed)
+        self.assertNotIn(encoded_key, exposed)
+
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_request_error_message_is_redacted(self, session_post):
+        write_key = 'SECRET_WRITE_KEY_5579'
+        encoded_key = base64.b64encode(b'SECRET_WRITE_KEY_5579:').decode()
+        session_post.side_effect = requests.ReadTimeout(
+            'timed out for {0}, Authorization: Basic {1}'.format(
+                write_key, encoded_key))
+
+        with self.assertRaises(requests.ReadTimeout) as raised:
+            post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+
+        message = str(raised.exception)
+        self.assertIn('timed out', message)
+        self.assertNotIn(write_key, message)
+        self.assertNotIn(encoded_key, message)
+
+    @mock.patch('rudderstack.analytics.request._session.post')
+    def test_error_response_is_redacted(self, session_post):
+        write_key = 'SECRET_WRITE_KEY_5579'
+        response = mock.Mock(status_code=401)
+        response.json.return_value = {
+            'code': 'invalid_write_key',
+            'message': {'detail': write_key, 'Authorization': 'Basic abc123'},
+        }
+        session_post.return_value = response
+
+        with self.assertRaises(APIError) as raised:
+            post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
+
+        self.assertEqual(raised.exception.code, 'invalid_write_key')
+        self.assertNotIn(write_key, repr(raised.exception.args))
+        self.assertNotIn('abc123', str(raised.exception))
+        self.assertIn('[REDACTED]', str(raised.exception))
 
     def test_datetime_serialization(self):
         data = {'created': datetime(2012, 3, 4, 5, 6, 7, 891011)}

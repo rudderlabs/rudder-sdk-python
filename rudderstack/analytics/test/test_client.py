@@ -1,5 +1,6 @@
 from datetime import date, datetime
 import unittest
+import requests
 from unittest import mock
 from rudderstack.analytics.test.test_constants import TEST_PROXY
 
@@ -280,6 +281,20 @@ class TestClient(unittest.TestCase):
         self.assertFalse(client.consumers)
         self.assertTrue(client.queue.empty())
         self.assertTrue(success)
+
+    def test_sync_connection_failure_keeps_error_type(self):
+        client = Client('SECRET_WRITE_KEY_5579', host='http://127.0.0.1:1',
+                        sync_mode=True, timeout=2)
+
+        with self.assertRaises(requests.ConnectionError) as raised:
+            client.track('userId', 'python event')
+
+        self.assertNotIn('SECRET_WRITE_KEY_5579', repr(raised.exception))
+        self.assertIsNone(raised.exception.request)
+
+    def test_sync_shutdown(self):
+        client = Client(TEST_WRITE_KEY, sync_mode=True)
+        self.assertIsNone(client.shutdown())
 
     def test_overflow(self):
         client = Client(TEST_WRITE_KEY, max_queue_size=1)
