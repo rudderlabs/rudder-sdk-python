@@ -62,13 +62,18 @@ def post(write_key, host=None, gzip=True, timeout=15, proxies=None, **kwargs):
 
     try:
         payload = res.json()
+    except ValueError:
+        code, message = 'unknown', res.text
+    else:
         log.debug('received response: %s',
                   _sanitize_text(str(payload), write_key))
-        raise APIError(res.status_code, payload['code'],
-                       _sanitize_text(payload['message'], write_key))
-    except ValueError:
-        raise APIError(res.status_code, 'unknown',
-                       _sanitize_text(res.text, write_key))
+        code, message = payload['code'], payload['message']
+
+    # Raise after the handler so the decoder cannot expose its raw document.
+    if isinstance(code, (str, list, dict)):
+        code = _sanitize_text(str(code), write_key)
+    raise APIError(res.status_code, code, _sanitize_text(str(message), write_key))
+
 
 def _gzip_json(data):
     buf = BytesIO()

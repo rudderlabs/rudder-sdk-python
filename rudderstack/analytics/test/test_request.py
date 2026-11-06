@@ -46,8 +46,9 @@ class TestRequests(unittest.TestCase):
 
     @mock.patch('rudderstack.analytics.request._session.post')
     def test_non_json_error_response(self, session_post):
-        response = mock.Mock(status_code=502, text='Bad gateway')
-        response.json.side_effect = ValueError('invalid JSON')
+        response = requests.Response()
+        response.status_code = 502
+        response._content = ('Bad gateway ' + TEST_WRITE_KEY).encode()
         session_post.return_value = response
 
         with self.assertRaises(APIError) as raised:
@@ -55,7 +56,8 @@ class TestRequests(unittest.TestCase):
 
         self.assertEqual(raised.exception.status, 502)
         self.assertEqual(raised.exception.code, 'unknown')
-        self.assertEqual(raised.exception.message, 'Bad gateway')
+        self.assertEqual(raised.exception.message, 'Bad gateway [REDACTED]')
+        self.assertIsNone(raised.exception.__context__)
 
     @mock.patch('rudderstack.analytics.request._session.post')
     def test_request_error_is_propagated(self, session_post):
@@ -114,7 +116,7 @@ class TestRequests(unittest.TestCase):
         response = mock.Mock(status_code=401)
         response.json.return_value = {
             'code': 'invalid_write_key',
-            'message': "echo {'Authorization': 'Basic abc123'}",
+            'message': {'detail': write_key, 'Authorization': 'Basic abc123'},
         }
         session_post.return_value = response
 
@@ -122,6 +124,7 @@ class TestRequests(unittest.TestCase):
             post(write_key, host=TEST_DATA_PLANE_URL, batch=[])
 
         self.assertEqual(raised.exception.code, 'invalid_write_key')
+        self.assertNotIn(write_key, repr(raised.exception.args))
         self.assertNotIn('abc123', str(raised.exception))
         self.assertIn('[REDACTED]', str(raised.exception))
 
