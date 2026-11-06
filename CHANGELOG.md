@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.2.2](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.2.1...v2.2.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **analytics:** sanitize upload failures and harden shutdown ([#157](https://github.com/rudderlabs/rudder-sdk-python/issues/157)) ([57abe84](https://github.com/rudderlabs/rudder-sdk-python/commit/57abe845eaac61394febbd4a36723c0508c4acbe))
+
+
+### Miscellaneous
+
+* **deps:** bump urllib3 from 2.7.0 to 2.8.0 ([#175](https://github.com/rudderlabs/rudder-sdk-python/issues/175)) ([7935ebc](https://github.com/rudderlabs/rudder-sdk-python/commit/7935ebc6362d433173ad807e8705834c648239bf))
+
 ## [2.2.1](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.2.0...v2.2.1) (2026-11-05)
 
 
