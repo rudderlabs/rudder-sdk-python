@@ -10,7 +10,7 @@ try:
 except ImportError:
     from Queue import Queue
 
-from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE
+from rudderstack.analytics.consumer import Consumer, MAX_MSG_SIZE, BATCH_SIZE_LIMIT
 from rudderstack.analytics.request import APIError
 
 
@@ -94,6 +94,22 @@ class TestConsumer(unittest.TestCase):
         self.assertEqual(sum(batches, []), msgs)
         self.assertTrue(
             all(size <= DATA_PLANE_REQUEST_LIMIT for size in sent), sent)
+        self.assertEqual(q.unfinished_tasks, 0)
+
+    def test_large_msg_is_sent_alone(self):
+        q = Queue()
+        consumer = Consumer(q, '', upload_size=100, upload_interval=0.5)
+        large = {'m': 'x' * BATCH_SIZE_LIMIT}
+        for msg in ({'m': 'a'}, large, {'m': 'b'}):
+            q.put(msg)
+        batches = []
+        for _ in range(4):
+            batch = consumer.next()
+            if batch:
+                batches.append(batch)
+            for _ in batch:
+                q.task_done()
+        self.assertEqual(batches, [[{'m': 'a'}], [large], [{'m': 'b'}]])
         self.assertEqual(q.unfinished_tasks, 0)
 
     @mock.patch('rudderstack.analytics.consumer.post')

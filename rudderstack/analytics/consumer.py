@@ -14,8 +14,9 @@ from queue import Empty
 # little below that to leave space for the request envelope, eg. "sentAt".
 MAX_REQUEST_SIZE = 4000 << 10
 BATCH_SIZE_LIMIT = MAX_REQUEST_SIZE - (1 << 10)
-# A message must fit in a batch on its own.
-MAX_MSG_SIZE = BATCH_SIZE_LIMIT
+# Per-event limit. Some data planes accept larger requests than the default,
+# so an event above BATCH_SIZE_LIMIT is still sent, in a request of its own.
+MAX_MSG_SIZE = 4 << 10 << 10
 # Messages in the batch array are separated by ", ".
 ITEM_SEPARATOR_SIZE = 2
 
@@ -115,13 +116,13 @@ class Consumer(Thread):
                 continue
             if item_size > MAX_MSG_SIZE:
                 self.log.error(
-                    'Item exceeds 4000kb limit, dropping. (%s)', str(item))
+                    'Item exceeds 4mb limit, dropping. (%s)', str(item))
                 # The item is dropped, so it is done for queue.join().
                 queue.task_done()
                 continue
             if items:
                 item_size += ITEM_SEPARATOR_SIZE
-            if total_size + item_size > BATCH_SIZE_LIMIT:
+            if items and total_size + item_size > BATCH_SIZE_LIMIT:
                 # Send it with the next batch instead of making this one
                 # too large for the data plane. It is still unfinished in the
                 # queue, so flush() waits for it.
