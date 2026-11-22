@@ -14,7 +14,7 @@ install_requires = [
     # Require the patched IDNA release on every supported Python version.
     "idna>=3.15,<4.0",
     "backoff>=2.2.1,<3.0",
-    "python-dateutil>=2.2,<3.0",
+    "python-dateutil>=2.2,<5.0",
     "python-dotenv>=1.0.1,<2.0.0",
     "deprecation>=2.1.0,<3.0.0",
 ]
