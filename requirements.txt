@@ -10,6 +10,10 @@ certifi==2026.10.18
     # via requests
 charset-normalizer==3.3.2
     # via requests
+coverage==7.16.2 ; python_version >= "3.10"
+coverage==7.10.7 ; python_version == "3.9"
+coverage==7.6.1 ; python_version < "3.9"
+    # via -r requirements.in
 deprecation==2.1.0
     # via -r requirements.in
 flake8==7.4.1 ; python_version >= "3.10"
