@@ -79,10 +79,6 @@ def _clean_dict(dict_):
 
 def _coerce_unicode(cmplx):
     try:
-        item = cmplx.decode("utf-8", "strict")
+        return cmplx.decode("utf-8", "strict")
     except AttributeError as exception:
-        item = ":".join(exception)
-        item.decode("utf-8", "strict")
-        log.warning('Error decoding: %s', item)
-        return None
-    return item
+        raise TypeError('Expected a UTF-8 decodable value') from exception

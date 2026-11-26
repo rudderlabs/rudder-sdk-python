@@ -62,9 +62,7 @@ class TestUtils(unittest.TestCase):
 
     def test_clean_fn(self):
         cleaned = utils.clean({'fn': lambda x: x, 'number': 4})
-        self.assertEqual(cleaned['number'], 4)
-        if 'fn' in cleaned:
-            self.assertEqual(cleaned['fn'], None)
+        self.assertEqual(cleaned, {'number': 4})
 
     def test_remove_slash(self):
         self.assertEqual('http://hosted.rudderlabs.com',
