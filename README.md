@@ -36,6 +36,10 @@ analytics.dataPlaneUrl = <RUDDERSTACK_DATA_PLANE_URL>
 analytics.gzip = <True or False>
 ```
 
+Set the module-level `upload_size`, `upload_interval` (in seconds),
+`proxies`, and `thread` before the first SDK call to configure the
+default client.
+
 ## Sending Events
 
 Once the RudderStack client is initialized, you can use it to send your customer events. A sample `track` call is shown below:
