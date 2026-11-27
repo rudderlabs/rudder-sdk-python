@@ -91,6 +91,7 @@ class Client(object):
         if sync_mode:
             self.consumers = None
         else:
+            self.consumers = []
             # On program exit, allow the consumer thread to exit cleanly.
             # This prevents exceptions and a messy shutdown when the
             # interpreter is destroyed before the daemon thread finishes
@@ -100,7 +101,6 @@ class Client(object):
             if send:
                 atexit.register(self.join)
             for _ in range(thread):
-                self.consumers = []
                 consumer = Consumer(
                     self.queue, write_key, host=host, on_error=on_error,
                     upload_size=upload_size, upload_interval=upload_interval,

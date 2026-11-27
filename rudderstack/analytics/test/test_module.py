@@ -39,6 +39,27 @@ class TestModule(unittest.TestCase):
         created_client.track.assert_called_once_with(
             'userId', 'python module event')
 
+    def test_module_applies_consumer_settings(self):
+        proxies = {'https': 'http://proxy.example:8080'}
+        with mock.patch.multiple(
+            analytics,
+            default_client=None,
+            write_key=TEST_WRITE_KEY,
+            send=False,
+            upload_size=8,
+            upload_interval=0.1,
+            proxies=proxies,
+            thread=2,
+        ):
+            analytics.track('userId', 'python module event')
+            consumers = analytics.default_client.consumers
+
+        self.assertEqual(len(consumers), 2)
+        for consumer in consumers:
+            self.assertEqual(consumer.upload_size, 8)
+            self.assertEqual(consumer.upload_interval, 0.1)
+            self.assertEqual(consumer.proxies, proxies)
+
     def test_track(self):
         analytics.track('userId', 'python module event')
         analytics.flush()
