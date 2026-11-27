@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. 
 
+## [2.2.2](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.2.1...v2.2.2) (2026-11-27)
+
+
+### Bug Fixes
+
+* **analytics:** sanitize upload failures and harden shutdown ([#157](https://github.com/rudderlabs/rudder-sdk-python/issues/157)) ([57abe84](https://github.com/rudderlabs/rudder-sdk-python/commit/57abe845eaac61394febbd4a36723c0508c4acbe))
+* apply module settings to the default client ([#182](https://github.com/rudderlabs/rudder-sdk-python/issues/182)) ([f58e66b](https://github.com/rudderlabs/rudder-sdk-python/commit/f58e66b8737869b2aee861d27135e92069ef3444))
+* raise a clear error for unsupported text values ([#181](https://github.com/rudderlabs/rudder-sdk-python/issues/181)) ([e0a30de](https://github.com/rudderlabs/rudder-sdk-python/commit/e0a30de916397aa4d888f87ffbc5a318ad5b33e7))
+
+
+### Miscellaneous
+
+* analyse the sdk in sonarcloud with test coverage ([#179](https://github.com/rudderlabs/rudder-sdk-python/issues/179)) ([26e6be2](https://github.com/rudderlabs/rudder-sdk-python/commit/26e6be2739d1bc4d4bd6a28956fd102af2c7a99a))
+* collect unit test coverage ([#178](https://github.com/rudderlabs/rudder-sdk-python/issues/178)) ([c45d4b3](https://github.com/rudderlabs/rudder-sdk-python/commit/c45d4b3ccb83a911449e0132550bc04f023e33a2))
+* **deps:** bump urllib3 from 2.7.0 to 2.8.0 ([#175](https://github.com/rudderlabs/rudder-sdk-python/issues/175)) ([7935ebc](https://github.com/rudderlabs/rudder-sdk-python/commit/7935ebc6362d433173ad807e8705834c648239bf))
+* update e2e action pin ([#180](https://github.com/rudderlabs/rudder-sdk-python/issues/180)) ([89cead5](https://github.com/rudderlabs/rudder-sdk-python/commit/89cead52d8d047525c902a87028006d09f69d95c))
+
 ## [2.2.1](https://github.com/rudderlabs/rudder-sdk-python/compare/v2.2.0...v2.2.1) (2026-11-05)
 
 
