@@ -43,6 +43,8 @@ gzip = Client.DefaultConfig.gzip
 timeout = Client.DefaultConfig.timeout
 upload_interval = Client.DefaultConfig.upload_interval
 upload_size = Client.DefaultConfig.upload_size
+proxies = Client.DefaultConfig.proxies
+thread = Client.DefaultConfig.thread
 max_retries = Client.DefaultConfig.max_retries
 before_enqueue = Client.DefaultConfig.before_enqueue
 before_enqueue_on_error = Client.DefaultConfig.before_enqueue_on_error
@@ -109,6 +111,9 @@ def _proxy(method, *args, **kwargs):
                                 send=send, on_error=on_error,
                                 gzip=gzip, max_retries=max_retries,
                                 sync_mode=sync_mode, timeout=timeout,
+                                proxies=proxies, thread=thread,
+                                upload_size=upload_size,
+                                upload_interval=upload_interval,
                                 before_enqueue=before_enqueue,
                                 before_enqueue_on_error=before_enqueue_on_error)
 
