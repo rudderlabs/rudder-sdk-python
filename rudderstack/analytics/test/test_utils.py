@@ -64,6 +64,12 @@ class TestUtils(unittest.TestCase):
         cleaned = utils.clean({'fn': lambda x: x, 'number': 4})
         self.assertEqual(cleaned, {'number': 4})
 
+    def test_clean_reports_unsupported_value_and_cause(self):
+        with self.assertRaisesRegex(TypeError, 'Expected a UTF-8 decodable value') as error:
+            utils.clean(object())
+
+        self.assertIsInstance(error.exception.__cause__, AttributeError)
+
     def test_remove_slash(self):
         self.assertEqual('http://hosted.rudderlabs.com',
                          utils.remove_trailing_slash('http://hosted.rudderlabs.com/'))
